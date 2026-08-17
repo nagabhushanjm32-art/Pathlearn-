@@ -2,3 +2,7 @@ node_modules/
 dist/
 .env
 *.log
+server/.claude/
+server/.agents/
+server/.windsurf/
+server/skills-lock.json
