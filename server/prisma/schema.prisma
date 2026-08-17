@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,368 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+model User {
+  id              String           @id @default(cuid())
+  email           String           @unique
+  password        String
+  name            String
+  role            Role             @default(USER)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  aiConversations AIConversation[]
+  bookmarks       Bookmark[]
+  certificates    Certificate[]
+  mockInterviews  MockInterview[]
+  profile         Profile?
+  quizAttempts    QuizAttempt[]
+  roadmaps        Roadmap[]
+  skillMastery    SkillMastery[]
+  studyPlans      StudyPlan[]
+  userProgress    UserProgress[]
+
+  @@index([email])
+}
+
+model Profile {
+  id                  String     @id @default(cuid())
+  userId              String     @unique
+  avatarUrl           String?
+  targetRole          String?
+  level               Level?
+  goal                Goal?
+  studyTimePerDay     StudyTime?
+  onboardingCompleted Boolean    @default(false)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  user                User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Domain {
+  id             String          @id @default(cuid())
+  name           String          @unique
+  slug           String          @unique
+  description    String
+  icon           String?
+  difficulty     Level
+  estimatedDays  Int
+  skillTags      String[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  certificates   Certificate[]
+  mockInterviews MockInterview[]
+  roadmaps       Roadmap[]
+  studyPlans     StudyPlan[]
+  userProgress   UserProgress[]
+
+  @@index([slug])
+}
+
+model Roadmap {
+  id        String        @id @default(cuid())
+  userId    String
+  domainId  String
+  progress  Float         @default(0)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  domain    Domain        @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps     RoadmapStep[]
+
+  @@unique([userId, domainId])
+  @@index([userId])
+}
+
+model RoadmapStep {
+  id                 String     @id @default(cuid())
+  roadmapId          String
+  order              Int
+  title              String
+  description        String
+  difficulty         Level
+  estimatedMinutes   Int
+  prerequisites      String[]
+  learningObjectives String[]
+  skillsGained       String[]
+  interviewRelevance String?
+  isLocked           Boolean    @default(true)
+  isCompleted        Boolean    @default(false)
+  completedAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  bookmarks          Bookmark[]
+  notes              Note[]
+  quiz               Quiz?
+  resources          Resource[]
+  roadmap            Roadmap    @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  videos             Video[]
+
+  @@unique([roadmapId, order])
+  @@index([roadmapId])
+}
+
+model Resource {
+  id            String      @id @default(cuid())
+  roadmapStepId String
+  type          String
+  title         String
+  url           String
+  createdAt     DateTime    @default(now())
+  roadmapStep   RoadmapStep @relation(fields: [roadmapStepId], references: [id], onDelete: Cascade)
+
+  @@index([roadmapStepId])
+}
+
+model Video {
+  id            String      @id @default(cuid())
+  roadmapStepId String
+  youtubeId     String
+  title         String
+  channel       String
+  thumbnailUrl  String
+  durationSecs  Int
+  url           String
+  createdAt     DateTime    @default(now())
+  roadmapStep   RoadmapStep @relation(fields: [roadmapStepId], references: [id], onDelete: Cascade)
+
+  @@index([roadmapStepId])
+}
+
+model Note {
+  id            String      @id @default(cuid())
+  roadmapStepId String
+  content       Json
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  roadmapStep   RoadmapStep @relation(fields: [roadmapStepId], references: [id], onDelete: Cascade)
+
+  @@index([roadmapStepId])
+}
+
+model Bookmark {
+  id            String      @id @default(cuid())
+  userId        String
+  roadmapStepId String
+  createdAt     DateTime    @default(now())
+  roadmapStep   RoadmapStep @relation(fields: [roadmapStepId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roadmapStepId])
+}
+
+model Quiz {
+  id            String         @id @default(cuid())
+  roadmapStepId String         @unique
+  createdAt     DateTime       @default(now())
+  roadmapStep   RoadmapStep    @relation(fields: [roadmapStepId], references: [id], onDelete: Cascade)
+  attempts      QuizAttempt[]
+  questions     QuizQuestion[]
+}
+
+model QuizQuestion {
+  id           String       @id @default(cuid())
+  quizId       String
+  question     String
+  options      String[]
+  correctIndex Int
+  explanation  String
+  difficulty   Level
+  createdAt    DateTime     @default(now())
+  answers      QuizAnswer[]
+  quiz         Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+}
+
+model QuizAttempt {
+  id          String       @id @default(cuid())
+  quizId      String
+  userId      String
+  score       Int
+  totalCount  Int
+  completedAt DateTime     @default(now())
+  answers     QuizAnswer[]
+  quiz        Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+}
+
+model QuizAnswer {
+  id             String       @id @default(cuid())
+  quizAttemptId  String
+  quizQuestionId String
+  selectedIndex  Int
+  isCorrect      Boolean
+  quizAttempt    QuizAttempt  @relation(fields: [quizAttemptId], references: [id], onDelete: Cascade)
+  quizQuestion   QuizQuestion @relation(fields: [quizQuestionId], references: [id], onDelete: Cascade)
+
+  @@index([quizAttemptId])
+}
+
+model UserProgress {
+  id         String   @id @default(cuid())
+  userId     String
+  domainId   String
+  percentage Float    @default(0)
+  updatedAt  DateTime @updatedAt
+  domain     Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, domainId])
+}
+
+model SkillMastery {
+  id        String   @id @default(cuid())
+  userId    String
+  skillName String
+  mastery   Float    @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillName])
+}
+
+model StudyPlan {
+  id           String      @id @default(cuid())
+  userId       String
+  domainId     String
+  hoursPerWeek Float
+  targetDate   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  domain       Domain      @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks        StudyTask[]
+
+  @@index([userId])
+}
+
+model StudyTask {
+  id           String    @id @default(cuid())
+  studyPlanId  String
+  dayOfWeek    Int
+  title        String
+  durationMins Int
+  completed    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  studyPlan    StudyPlan @relation(fields: [studyPlanId], references: [id], onDelete: Cascade)
+
+  @@index([studyPlanId])
+}
+
+model MockInterview {
+  id             String              @id @default(cuid())
+  userId         String
+  domainId       String
+  type           InterviewType
+  difficulty     Level
+  overallScore   Int?
+  strongAreas    String[]
+  weakAreas      String[]
+  recommendation String?
+  startedAt      DateTime            @default(now())
+  completedAt    DateTime?
+  questions      InterviewQuestion[]
+  domain         Domain              @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model InterviewQuestion {
+  id              String           @id @default(cuid())
+  mockInterviewId String
+  order           Int
+  question        String
+  createdAt       DateTime         @default(now())
+  answer          InterviewAnswer?
+  mockInterview   MockInterview    @relation(fields: [mockInterviewId], references: [id], onDelete: Cascade)
+
+  @@unique([mockInterviewId, order])
+}
+
+model InterviewAnswer {
+  id                  String            @id @default(cuid())
+  interviewQuestionId String            @unique
+  answerText          String
+  score               Int?
+  whatWasGood         String?
+  whatWasMissing      String?
+  idealDirection      String?
+  improvementTip      String?
+  createdAt           DateTime          @default(now())
+  interviewQuestion   InterviewQuestion @relation(fields: [interviewQuestionId], references: [id], onDelete: Cascade)
+}
+
+model Certificate {
+  id            String                    @id @default(cuid())
+  certificateId String                    @unique
+  userId        String
+  domainId      String
+  score         Int
+  issuedAt      DateTime                  @default(now())
+  revoked       Boolean                   @default(false)
+  revokedAt     DateTime?
+  domain        Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifications CertificateVerification[]
+
+  @@unique([userId, domainId])
+  @@index([certificateId])
+}
+
+model CertificateVerification {
+  id            String      @id @default(cuid())
+  certificateId String
+  viewedAt      DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [certificateId], onDelete: Cascade)
+
+  @@index([certificateId])
+}
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  domainId  String?
+  messages  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Goal {
+  LEARN_FUNDAMENTALS
+  INTERVIEW_PREP
+  BUILD_PROJECTS
+  JOB_READY
+}
+
+enum StudyTime {
+  THIRTY_MIN
+  ONE_HOUR
+  TWO_HOURS
+  THREE_PLUS_HOURS
+}
+
+enum InterviewType {
+  TECHNICAL
+  HR
+  SCENARIO_BASED
+  MIXED
 }
