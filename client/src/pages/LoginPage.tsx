@@ -38,12 +38,26 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <Label htmlFor="email" className="text-white">Enter email id</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="text-white bg-neutral-900 border-gray-600 placeholder:text-gray-500"
+            />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <Label htmlFor="password" className="text-white">Enter password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="text-white bg-neutral-900 border-gray-600 placeholder:text-gray-500"
+            />
           </div>
 
           {error && <p className="text-sm text-red-500">{error}</p>}
