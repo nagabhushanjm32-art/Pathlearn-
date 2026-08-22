@@ -4,6 +4,7 @@ import bcrypt from "bcrypt"
 import prisma from "../utils/prisma"
 import { registerSchema, loginSchema } from "../validators/authValidator"
 import { signToken } from "../utils/jwt"
+import { AuthRequest } from "../middleware/authenticate"
 
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body)
@@ -94,5 +95,30 @@ export async function login(req: Request, res: Response) {
   } catch (error) {
     console.error("LOGIN ERROR DETAILS:", error)
     return res.status(500).json({ message: "Something went wrong during login" })
+  }
+}
+
+export async function getMe(req: AuthRequest, res: Response) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        profile: true,
+      },
+    })
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" })
+    }
+
+    return res.status(200).json({ user })
+  } catch (error) {
+    console.error("GET ME ERROR DETAILS:", error)
+    return res.status(500).json({ message: "Something went wrong" })
   }
 }
