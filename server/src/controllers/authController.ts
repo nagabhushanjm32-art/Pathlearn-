@@ -1,7 +1,9 @@
+import "dotenv/config"
 import { Request, Response } from "express"
 import bcrypt from "bcrypt"
 import prisma from "../utils/prisma"
-import { registerSchema } from "../validators/authValidator"
+import { registerSchema, loginSchema } from "../validators/authValidator"
+import { signToken } from "../utils/jwt"
 
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body)
@@ -49,5 +51,48 @@ export async function register(req: Request, res: Response) {
   } catch (error) {
     console.error("REGISTER ERROR DETAILS:", error)
     return res.status(500).json({ message: "Something went wrong during registration" })
+  }
+}
+
+export async function login(req: Request, res: Response) {
+  const parsed = loginSchema.safeParse(req.body)
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Invalid input",
+      errors: parsed.error.flatten().fieldErrors,
+    })
+  }
+
+  const { email, password } = parsed.data
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } })
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" })
+    }
+
+    const passwordMatches = await bcrypt.compare(password, user.password)
+
+    if (!passwordMatches) {
+      return res.status(401).json({ message: "Invalid email or password" })
+    }
+
+    const token = signToken({ userId: user.id, role: user.role })
+
+    return res.status(200).json({
+      message: "Logged in successfully",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    })
+  } catch (error) {
+    console.error("LOGIN ERROR DETAILS:", error)
+    return res.status(500).json({ message: "Something went wrong during login" })
   }
 }
