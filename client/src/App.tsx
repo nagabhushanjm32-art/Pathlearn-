@@ -1,11 +1,16 @@
-import { Button } from "@/components/ui/button"
+import { Routes, Route, Navigate } from "react-router-dom"
+import LoginPage from "./pages/LoginPage"
+import RegisterPage from "./pages/RegisterPage"
+import DashboardPage from "./pages/DashboardPage"
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-black">
-      <h1 className="text-4xl font-bold text-white">PathLearn</h1>
-      <Button>Get Started</Button>
-    </div>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/" element={<Navigate to="/login" replace />} />
+    </Routes>
   )
 }
 
