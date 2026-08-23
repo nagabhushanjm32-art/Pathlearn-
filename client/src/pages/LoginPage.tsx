@@ -20,7 +20,13 @@ export default function LoginPage() {
     try {
       const res = await api.post("/auth/login", { email, password })
       localStorage.setItem("token", res.data.token)
-      navigate("/dashboard")
+
+      const me = await api.get("/auth/me")
+      if (me.data.user.profile?.onboardingCompleted) {
+        navigate("/dashboard")
+      } else {
+        navigate("/onboarding")
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || "Something went wrong")
     } finally {
