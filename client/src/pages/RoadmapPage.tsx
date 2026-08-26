@@ -206,15 +206,20 @@ export default function RoadmapPage() {
                       </p>
                     )}
 
-                    {!step.isCompleted && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleComplete(step.id)}
-                        disabled={completingId === step.id}
-                      >
-                        {completingId === step.id ? "Marking complete..." : "Mark as Complete"}
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => navigate(`/quiz/${step.id}`)}>
+                        Take Quiz
                       </Button>
-                    )}
+                      {!step.isCompleted && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleComplete(step.id)}
+                          disabled={completingId === step.id}
+                        >
+                          {completingId === step.id ? "Marking complete..." : "Mark as Complete"}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
