@@ -4,6 +4,7 @@ import RegisterPage from "./pages/RegisterPage"
 import DashboardPage from "./pages/DashboardPage"
 import OnboardingPage from "./pages/OnboardingPage"
 import DomainExplorerPage from "./pages/DomainExplorerPage"
+import RoadmapPage from "./pages/RoadmapPage"
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Route path="/onboarding" element={<OnboardingPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/domains" element={<DomainExplorerPage />} />
+      <Route path="/domains/:domainId" element={<RoadmapPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
     </Routes>
   )
