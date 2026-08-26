@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes"
 import profileRoutes from "./routes/profileRoutes"
 import domainRoutes from "./routes/domainRoutes"
 import roadmapRoutes from "./routes/roadmapRoutes"
+import quizRoutes from "./routes/quizRoutes"
 
 dotenv.config()
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRoutes)
 app.use("/api/profile", profileRoutes)
 app.use("/api/domains", domainRoutes)
 app.use("/api/roadmaps", roadmapRoutes)
+app.use("/api/quiz", quizRoutes)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
