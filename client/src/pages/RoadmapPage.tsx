@@ -207,6 +207,9 @@ export default function RoadmapPage() {
                     )}
 
                     <div className="flex gap-2">
+                      <Button size="sm" variant="secondary" onClick={() => navigate(`/notes/${step.id}`)}>
+                        Read Notes
+                      </Button>
                       <Button size="sm" variant="secondary" onClick={() => navigate(`/quiz/${step.id}`)}>
                         Take Quiz
                       </Button>
@@ -230,3 +233,4 @@ export default function RoadmapPage() {
     </div>
   )
 }
+

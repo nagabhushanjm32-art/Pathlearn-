@@ -6,6 +6,7 @@ import OnboardingPage from "./pages/OnboardingPage"
 import DomainExplorerPage from "./pages/DomainExplorerPage"
 import RoadmapPage from "./pages/RoadmapPage"
 import QuizPage from "./pages/QuizPage"
+import NotesPage from "./pages/NotesPage"
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
       <Route path="/domains" element={<DomainExplorerPage />} />
       <Route path="/domains/:domainId" element={<RoadmapPage />} />
       <Route path="/quiz/:stepId" element={<QuizPage />} />
+      <Route path="/notes/:stepId" element={<NotesPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
     </Routes>
   )
