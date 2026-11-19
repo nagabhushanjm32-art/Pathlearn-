@@ -1,22 +1,14 @@
 import api from "./api"
+import { StepNote } from "../types"
 
-export interface NoteContent {
-  summary: string
-  keyConcepts: string[]
-  definitions: { term: string; definition: string }[]
-  examples: string[]
-  commonMistakes: string[]
-  interviewTips: string[]
-  quickRevision: string[]
-  takeaways: string[]
-}
-
-export interface Note {
-  id: string
-  content: NoteContent
-}
-
-export async function fetchNotes(stepId: string): Promise<Note> {
+export async function fetchNotes(stepId: string): Promise<StepNote> {
   const res = await api.get(`/notes/steps/${stepId}`)
-  return res.data.note
+  const noteData = res.data?.note
+  if (noteData?.content) {
+    return {
+      id: noteData.id,
+      ...noteData.content,
+    }
+  }
+  return noteData
 }

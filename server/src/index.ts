@@ -1,33 +1,11 @@
-import express from "express"
-import cors from "cors"
-import helmet from "helmet"
-import dotenv from "dotenv"
-import authRoutes from "./routes/authRoutes"
-import profileRoutes from "./routes/profileRoutes"
-import domainRoutes from "./routes/domainRoutes"
-import roadmapRoutes from "./routes/roadmapRoutes"
-import quizRoutes from "./routes/quizRoutes"
-import notesRoutes from "./routes/notesRoutes"
-import interviewRoutes from "./routes/interviewRoutes"
+import app from "./app"
+import { config } from "./config"
 
-dotenv.config()
+const PORT = config.port || 5000
 
-const app = express()
-app.use(cors())
-app.use(helmet())
-app.use(express.json())
-
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", message: "PathLearn server running" })
+app.listen(PORT, () => {
+  console.log(`===========================================`)
+  console.log(`🚀 PathLearn API Server running on port ${PORT}`)
+  console.log(`🔗 Health: http://localhost:${PORT}/api/health`)
+  console.log(`===========================================`)
 })
-
-app.use("/api/auth", authRoutes)
-app.use("/api/profile", profileRoutes)
-app.use("/api/domains", domainRoutes)
-app.use("/api/roadmaps", roadmapRoutes)
-app.use("/api/quiz", quizRoutes)
-app.use("/api/notes", notesRoutes)
-app.use("/api/interview", interviewRoutes)
-
-const PORT = process.env.PORT || 5000
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`))

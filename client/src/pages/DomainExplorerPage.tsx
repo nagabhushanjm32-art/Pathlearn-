@@ -1,151 +1,167 @@
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { fetchDomains, type Domain } from "../services/domains"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import {
-  Code2,
-  GitBranch,
-  Brain,
-  BarChart3,
-  Globe,
-  ShieldCheck,
-  Cloud,
-  Database,
-  Search,
-  Clock,
-  type LucideIcon,
-} from "lucide-react"
-
-const ICON_MAP: Record<string, LucideIcon> = {
-  Code2,
-  GitBranch,
-  Brain,
-  BarChart3,
-  Globe,
-  ShieldCheck,
-  Cloud,
-  Database,
-}
-
-const DIFFICULTY_STYLES: Record<string, string> = {
-  BEGINNER: "bg-green-500/10 text-green-400 border-green-500/30",
-  INTERMEDIATE: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
-  ADVANCED: "bg-red-500/10 text-red-400 border-red-500/30",
-}
+import React, { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
+import { Search, Filter, Compass, Sparkles } from "lucide-react"
+import { DomainCard } from "../components/domains/DomainCard"
+import { EmptyState } from "../components/common/EmptyState"
+import { domainService } from "../services/domainService"
+import { Domain } from "../types"
 
 export default function DomainExplorerPage() {
-  const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [domains, setDomains] = useState<Domain[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [search, setSearch] = useState("")
-  const [difficultyFilter, setDifficultyFilter] = useState<string>("ALL")
+
+  const initialSearch = searchParams.get("search") || ""
+  const [searchQuery, setSearchQuery] = useState(initialSearch)
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string>("ALL")
+  const [activeTab, setActiveTab] = useState<string>("ALL")
 
   useEffect(() => {
+    async function fetchDomains() {
+      try {
+        const data = await domainService.getDomains()
+        setDomains(data)
+      } catch (err) {
+        console.error("Failed to load domains", err)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchDomains()
-      .then(setDomains)
-      .catch(() => setError("Could not load domains"))
-      .finally(() => setLoading(false))
   }, [])
 
-  const filtered = domains.filter((d) => {
+  useEffect(() => {
+    const s = searchParams.get("search")
+    if (s !== null) {
+      setSearchQuery(s)
+    }
+  }, [searchParams])
+
+  const filteredDomains = domains.filter((d) => {
     const matchesSearch =
-      d.name.toLowerCase().includes(search.toLowerCase()) ||
-      d.skillTags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()))
-    const matchesDifficulty = difficultyFilter === "ALL" || d.difficulty === difficultyFilter
-    return matchesSearch && matchesDifficulty
+      d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.skillTags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+
+    const matchesDifficulty =
+      selectedDifficulty === "ALL" || d.difficulty === selectedDifficulty
+
+    const matchesCategory = () => {
+      const slug = d.slug || d.id
+      if (activeTab === "ALL") return true
+      if (activeTab === "AI_DATA")
+        return [
+          "ai-engineer",
+          "machine-learning-engineer",
+          "data-scientist",
+          "generative-ai-engineer",
+        ].includes(slug)
+      if (activeTab === "DEV") return ["python-developer", "web-developer"].includes(slug)
+      if (activeTab === "DATA") return ["data-analyst", "data-scientist"].includes(slug)
+      return true
+    }
+
+    return matchesSearch && matchesDifficulty && matchesCategory()
   })
 
   return (
-    <div className="min-h-screen bg-black text-white px-6 py-10">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Explore Domains</h1>
-          <p className="text-neutral-400 mt-1">Choose a path to start your AI-curated learning journey</p>
-        </div>
+    <div className="space-y-8 pb-12">
+      {/* Header Banner */}
+      <div className="p-8 rounded-3xl bg-linear-to-r from-indigo-900/30 via-card to-purple-900/20 border border-indigo-500/20 relative overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
-            <Input
-              placeholder="Search domains or skills..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 text-white bg-neutral-900 border-gray-600 placeholder:text-gray-500"
-            />
+        <div className="max-w-2xl space-y-3 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold">
+            <Compass className="w-3.5 h-3.5" />
+            <span>AI Curriculum Engine</span>
           </div>
-          <div className="flex gap-2">
-            {["ALL", "BEGINNER", "INTERMEDIATE", "ADVANCED"].map((level) => (
-              <button
-                key={level}
-                onClick={() => setDifficultyFilter(level)}
-                className={`px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
-                  difficultyFilter === level
-                    ? "bg-white text-black border-white"
-                    : "bg-neutral-900 text-neutral-300 border-neutral-700 hover:border-neutral-500"
-                }`}
-              >
-                {level === "ALL" ? "All" : level.charAt(0) + level.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
-        </div>
 
-        {loading && <p className="text-neutral-500">Loading domains...</p>}
-        {error && <p className="text-red-500">{error}</p>}
-
-        {!loading && !error && filtered.length === 0 && (
-          <p className="text-neutral-500">No domains match your search.</p>
-        )}
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((domain) => {
-            const Icon = (domain.icon && ICON_MAP[domain.icon]) || Code2
-            return (
-              <div
-                key={domain.id}
-                className="bg-neutral-950 border border-neutral-800 rounded-2xl p-6 hover:border-neutral-600 transition-colors flex flex-col"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-xl bg-neutral-900 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span
-                    className={`text-xs font-medium px-2 py-1 rounded-full border ${DIFFICULTY_STYLES[domain.difficulty]}`}
-                  >
-                    {domain.difficulty.charAt(0) + domain.difficulty.slice(1).toLowerCase()}
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-semibold mb-1.5">{domain.name}</h3>
-                <p className="text-sm text-neutral-400 mb-4 flex-1">{domain.description}</p>
-
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {domain.skillTags.slice(0, 3).map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs px-2 py-1 rounded-md bg-neutral-900 text-neutral-400 border border-neutral-800"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-neutral-800">
-                  <span className="flex items-center gap-1.5 text-xs text-neutral-500">
-                    <Clock className="w-3.5 h-3.5" />
-                    ~{domain.estimatedDays} days
-                  </span>
-                  <Button size="sm" onClick={() => navigate(`/domains/${domain.id}`)}>
-                    Start Learning
-                  </Button>
-                </div>
-              </div>
-            )
-          })}
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            Explore Learning Domains
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Select a specialized technical path curated by industry engineers. Complete structured roadmap steps, pass interactive quizzes, and unlock your AI mock interview.
+          </p>
         </div>
       </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Category Filter Tabs */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-card border border-border overflow-x-auto">
+          {[
+            { id: "ALL", label: "All 7 Tracks" },
+            { id: "AI_DATA", label: "AI & Machine Learning" },
+            { id: "DEV", label: "Software & Web Development" },
+            { id: "DATA", label: "Data Analytics & Science" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
+                activeTab === tab.id
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search & Difficulty Select */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Filter by skill, name..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value)
+                setSearchParams({ search: e.target.value })
+              }}
+              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-card border border-border focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-foreground placeholder:text-muted-foreground/60 transition-all shadow-xs"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value)}
+              className="px-3 py-2 text-xs rounded-xl bg-card border border-border text-foreground outline-none focus:border-indigo-500"
+            >
+              <option value="ALL">All Levels</option>
+              <option value="BEGINNER">Beginner</option>
+              <option value="INTERMEDIATE">Intermediate</option>
+              <option value="ADVANCED">Advanced</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Domains Grid */}
+      {filteredDomains.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredDomains.map((domain) => (
+            <DomainCard key={domain.id} domain={domain} />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          icon={Sparkles}
+          title="No domains match your search"
+          description="Try clearing your filters or search query to explore all available engineering tracks."
+          actionLabel="Clear Filters"
+          onAction={() => {
+            setSearchQuery("")
+            setSelectedDifficulty("ALL")
+            setActiveTab("ALL")
+            setSearchParams({})
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -1,124 +1,105 @@
-import "dotenv/config"
-import { Request, Response } from "express"
-import bcrypt from "bcrypt"
-import prisma from "../utils/prisma"
-import { registerSchema, loginSchema } from "../validators/authValidator"
-import { signToken } from "../utils/jwt"
-import { AuthRequest } from "../middleware/authenticate"
+import { Request, Response, NextFunction } from "express"
+import { authService } from "../services/authService"
+import { env } from "../config/env"
+import { AuthRequest } from "../middleware/authMiddleware"
 
-export async function register(req: Request, res: Response) {
-  const parsed = registerSchema.safeParse(req.body)
+const AUTH_COOKIE_NAME = "token"
 
-  if (!parsed.success) {
-    return res.status(400).json({
-      message: "Invalid input",
-      errors: parsed.error.flatten().fieldErrors,
-    })
+/**
+ * Cookie options tailored for security in production and local development
+ */
+export function getAuthCookieOptions() {
+  const isProduction = env.nodeEnv === "production"
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? ("none" as const) : ("lax" as const),
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: "/",
   }
+}
 
-  const { name, email, password } = parsed.data
-
+/**
+ * POST /api/auth/register
+ */
+export async function register(req: Request, res: Response, next: NextFunction) {
   try {
-    const existingUser = await prisma.user.findUnique({ where: { email } })
+    const { name, email, password } = req.body
+    const { user, token } = await authService.register({ name, email, password })
 
-    if (existingUser) {
-      return res.status(409).json({ message: "An account with this email already exists" })
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        profile: {
-          create: {},
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    })
+    // Set secure HTTP-only cookie with JWT
+    res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions())
 
     return res.status(201).json({
       message: "Account created successfully",
       user,
     })
   } catch (error) {
-    console.error("REGISTER ERROR DETAILS:", error)
-    return res.status(500).json({ message: "Something went wrong during registration" })
+    next(error)
   }
 }
 
-export async function login(req: Request, res: Response) {
-  const parsed = loginSchema.safeParse(req.body)
-
-  if (!parsed.success) {
-    return res.status(400).json({
-      message: "Invalid input",
-      errors: parsed.error.flatten().fieldErrors,
-    })
-  }
-
-  const { email, password } = parsed.data
-
+/**
+ * POST /api/auth/login
+ */
+export async function login(req: Request, res: Response, next: NextFunction) {
   try {
-    const user = await prisma.user.findUnique({ where: { email } })
+    const { email, password } = req.body
+    const { user, token } = await authService.login({ email, password })
 
-    if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" })
-    }
-
-    const passwordMatches = await bcrypt.compare(password, user.password)
-
-    if (!passwordMatches) {
-      return res.status(401).json({ message: "Invalid email or password" })
-    }
-
-    const token = signToken({ userId: user.id, role: user.role })
+    // Set secure HTTP-only cookie with JWT
+    res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions())
 
     return res.status(200).json({
       message: "Logged in successfully",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      user,
     })
   } catch (error) {
-    console.error("LOGIN ERROR DETAILS:", error)
-    return res.status(500).json({ message: "Something went wrong during login" })
+    next(error)
   }
 }
 
-export async function getMe(req: AuthRequest, res: Response) {
+/**
+ * POST /api/auth/logout
+ */
+export async function logout(_req: Request, res: Response, next: NextFunction) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        profile: true,
-      },
+    const isProduction = env.nodeEnv === "production"
+    res.clearCookie(AUTH_COOKIE_NAME, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+      path: "/",
     })
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" })
+    return res.status(200).json({
+      message: "Logged out successfully",
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * GET /api/auth/me
+ */
+export async function getMe(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = req.user?.userId
+    if (!userId) {
+      return res.status(401).json({
+        authenticated: false,
+        message: "Authentication required",
+      })
     }
 
-    return res.status(200).json({ user })
+    const user = await authService.getCurrentUser(userId)
+
+    return res.status(200).json({
+      authenticated: true,
+      user,
+    })
   } catch (error) {
-    console.error("GET ME ERROR DETAILS:", error)
-    return res.status(500).json({ message: "Something went wrong" })
+    next(error)
   }
 }

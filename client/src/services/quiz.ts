@@ -1,43 +1,15 @@
 import api from "./api"
+import { StepQuiz, QuizAttemptResult } from "../types"
 
-export interface QuizQuestion {
-  id: string
-  question: string
-  options: string[]
-  correctIndex: number
-  explanation: string
-  difficulty: string
-}
-
-export interface Quiz {
-  id: string
-  roadmapStepId: string
-  questions: QuizQuestion[]
-}
-
-export interface QuizAnswerResult {
-  quizQuestionId: string
-  selectedIndex: number
-  isCorrect: boolean
-  quizQuestion: QuizQuestion
-}
-
-export interface QuizAttempt {
-  id: string
-  score: number
-  totalCount: number
-  answers: QuizAnswerResult[]
-}
-
-export async function generateQuizForStep(stepId: string): Promise<Quiz> {
-  const res = await api.post(`/quiz/steps/${stepId}/generate`)
+export async function fetchOrGenerateQuiz(stepId: string): Promise<StepQuiz> {
+  const res = await api.get(`/quiz/steps/${stepId}`)
   return res.data.quiz
 }
 
-export async function submitQuiz(
+export async function submitQuizAttempt(
   quizId: string,
   answers: { questionId: string; selectedIndex: number }[]
-): Promise<QuizAttempt> {
+): Promise<{ attempt: QuizAttemptResult; stepProgress: any }> {
   const res = await api.post(`/quiz/${quizId}/submit`, { answers })
-  return res.data.attempt
+  return res.data
 }

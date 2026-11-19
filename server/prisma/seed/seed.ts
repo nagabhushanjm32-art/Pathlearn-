@@ -18,7 +18,7 @@ const domains = [
   {
     name: "Data Structures & Algorithms",
     slug: "dsa",
-    description: "Build strong problem-solving skills with core data structures and algorithms — essential for technical interviews.",
+    description: "Build strong problem-solving skills with core data structures and algorithms ï¿½ essential for technical interviews.",
     icon: "GitBranch",
     difficulty: "INTERMEDIATE" as const,
     estimatedDays: 45,

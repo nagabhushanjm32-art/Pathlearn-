@@ -4,10 +4,10 @@ import prisma from "../utils/prisma"
 import { AuthRequest } from "../middleware/authenticate"
 
 export async function completeStep(req: AuthRequest, res: Response) {
-  const { stepId } = req.params
+  const stepId = req.params.stepId as string
 
   try {
-    const step = await prisma.roadmapStep.findUnique({
+    const step: any = await prisma.roadmapStep.findUnique({
       where: { id: stepId },
       include: { roadmap: true },
     })
@@ -16,7 +16,7 @@ export async function completeStep(req: AuthRequest, res: Response) {
       return res.status(404).json({ message: "Step not found" })
     }
 
-    if (step.roadmap.userId !== req.user!.userId) {
+    if (step.roadmap?.userId !== req.user!.userId) {
       return res.status(403).json({ message: "Not authorized to modify this roadmap" })
     }
 
@@ -43,7 +43,7 @@ export async function completeStep(req: AuthRequest, res: Response) {
     const allSteps = await prisma.roadmapStep.findMany({
       where: { roadmapId: step.roadmapId },
     })
-    const completedCount = allSteps.filter((s) => s.isCompleted || s.id === stepId).length
+    const completedCount = allSteps.filter((s: any) => s.isCompleted || s.id === stepId).length
     const progress = (completedCount / allSteps.length) * 100
 
     await prisma.roadmap.update({

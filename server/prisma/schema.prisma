@@ -24,7 +24,13 @@ model User {
   roadmaps        Roadmap[]
   skillMastery    SkillMastery[]
   studyPlans      StudyPlan[]
-  userProgress    UserProgress[]
+  userProgress          UserProgress[]
+  stepProgress          UserStepProgress[]
+  careerProfile         CareerProfile?
+  resumeAnalyses        ResumeAnalysis[]
+  userSkills            UserSkill[]
+  skillGaps             SkillGap[]
+  careerRecommendations CareerRecommendation[]
 
   @@index([email])
 }
@@ -101,6 +107,7 @@ model RoadmapStep {
   resources          Resource[]
   roadmap            Roadmap    @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
   videos             Video[]
+  stepProgress       UserStepProgress[]
 
   @@unique([roadmapId, order])
   @@index([roadmapId])
@@ -258,22 +265,35 @@ model StudyTask {
 }
 
 model MockInterview {
-  id             String              @id @default(cuid())
-  userId         String
-  domainId       String
-  type           InterviewType
-  difficulty     Level
-  overallScore   Int?
-  strongAreas    String[]
-  weakAreas      String[]
-  recommendation String?
-  startedAt      DateTime            @default(now())
-  completedAt    DateTime?
-  questions      InterviewQuestion[]
-  domain         Domain              @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String              @id @default(cuid())
+  userId              String
+  domainId            String
+  type                InterviewType       @default(TECHNICAL)
+  difficulty          Level               @default(INTERMEDIATE)
+  status              String              @default("IN_PROGRESS")
+  totalQuestions      Int                 @default(0)
+  currentQuestion     Int                 @default(1)
+  overallScore        Int?
+  technicalScore      Int?
+  problemSolvingScore Int?
+  communicationScore  Int?
+  practicalScore      Int?
+  conceptualScore     Int?
+  readinessLevel      String?
+  strongAreas         String[]
+  weakAreas           String[]
+  recommendation      String?
+  recommendedTopics   String[]
+  startedAt           DateTime            @default(now())
+  completedAt         DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @default(now()) @updatedAt
+  questions           InterviewQuestion[]
+  domain              Domain              @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([domainId])
 }
 
 model InterviewQuestion {
@@ -281,11 +301,25 @@ model InterviewQuestion {
   mockInterviewId String
   order           Int
   question        String
+  topic           String?
+  difficulty      String?
+  questionType    String?
+  answer          String?
+  score           Int?
+  correctness     Int?
+  technicalDepth  Int?
+  clarity         Int?
+  knowledgeLevel  String?
+  strengths       String[]
+  weaknesses      String[]
+  missingConcepts String[]
+  feedback        String?
   createdAt       DateTime         @default(now())
-  answer          InterviewAnswer?
+  answerRelation  InterviewAnswer?
   mockInterview   MockInterview    @relation(fields: [mockInterviewId], references: [id], onDelete: Cascade)
 
   @@unique([mockInterviewId, order])
+  @@index([mockInterviewId])
 }
 
 model InterviewAnswer {
@@ -302,26 +336,39 @@ model InterviewAnswer {
 }
 
 model Certificate {
-  id            String                    @id @default(cuid())
-  certificateId String                    @unique
-  userId        String
-  domainId      String
-  score         Int
-  issuedAt      DateTime                  @default(now())
-  revoked       Boolean                   @default(false)
-  revokedAt     DateTime?
-  domain        Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
-  user          User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  verifications CertificateVerification[]
+  id              String                    @id @default(cuid())
+  certificateId   String                    @unique
+  certificateCode String?                   @unique
+  userId          String
+  domainId        String
+  status          String                    @default("ACTIVE")
+  score           Int
+  roadmapScore    Int?                      @default(100)
+  quizScore       Int?
+  interviewScore  Int?
+  pdfUrl          String?
+  verificationUrl String?
+  issuedAt        DateTime                  @default(now())
+  revoked         Boolean                   @default(false)
+  revokedAt       DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  domain          Domain                    @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifications   CertificateVerification[]
 
   @@unique([userId, domainId])
   @@index([certificateId])
+  @@index([certificateCode])
 }
 
 model CertificateVerification {
   id            String      @id @default(cuid())
   certificateId String
-  viewedAt      DateTime    @default(now())
+  verifiedAt    DateTime    @default(now())
+  ipHash        String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
   certificate   Certificate @relation(fields: [certificateId], references: [certificateId], onDelete: Cascade)
 
   @@index([certificateId])
@@ -337,6 +384,27 @@ model AIConversation {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model UserStepProgress {
+  id             String      @id @default(cuid())
+  userId         String
+  stepId         String
+  videoProgress  Float       @default(0)
+  videoStarted   Boolean     @default(false)
+  videoCompleted Boolean     @default(false)
+  quizCompleted  Boolean     @default(false)
+  quizScore      Int?
+  stepCompleted  Boolean     @default(false)
+  completedAt    DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step           RoadmapStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stepId])
+  @@index([userId])
+  @@index([stepId])
 }
 
 enum Role {
@@ -369,4 +437,80 @@ enum InterviewType {
   HR
   SCENARIO_BASED
   MIXED
+}
+
+model CareerProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  targetRole     String   @default("AI Engineer")
+  readinessScore Int      @default(0)
+  breakdownJson  Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ResumeAnalysis {
+  id             String   @id @default(cuid())
+  userId         String
+  fileName       String
+  fileSize       Int
+  fileType       String
+  filePath       String?
+  parsedData     Json
+  aiAnalysis     Json
+  resumeScore    Int      @default(75)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model UserSkill {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  category   String   @default("TECHNICAL")
+  level      String   @default("INTERMEDIATE")
+  confidence Float    @default(0.8)
+  source     String   @default("RESUME")
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model SkillGap {
+  id                 String   @id @default(cuid())
+  userId             String
+  targetRole         String
+  skillName          String
+  currentLevel       String   @default("Needs Improvement")
+  requiredLevel      String   @default("Intermediate")
+  matchPercentage    Int      @default(40)
+  gapScore           Int      @default(60)
+  status             String   @default("NEEDS_IMPROVEMENT")
+  whyItMatters       String?
+  recommendedTopics  String[]
+  estimatedEffort    String?
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, targetRole])
+}
+
+model CareerRecommendation {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  description String
+  priority    String   @default("MEDIUM")
+  meta        Json?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
