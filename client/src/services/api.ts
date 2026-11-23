@@ -1,7 +1,28 @@
 import axios, { AxiosInstance } from "axios"
 
+function getBaseURL(): string {
+  const envUrl = (import.meta.env.VITE_API_URL || "").trim()
+
+  // If a valid HTTP/HTTPS URL or relative path is provided, use it
+  if (envUrl && (envUrl.startsWith("http://") || envUrl.startsWith("https://") || envUrl.startsWith("/"))) {
+    return envUrl.replace(/\/+$/, "")
+  }
+
+  // When deployed on Vercel or any live host without a valid VITE_API_URL, default to /api
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+  ) {
+    return "/api"
+  }
+
+  // Local development default
+  return "http://localhost:5000/api"
+}
+
 export const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: getBaseURL(),
   withCredentials: true, // Crucial for sending & receiving HTTP-only cookies
   headers: {
     "Content-Type": "application/json",
