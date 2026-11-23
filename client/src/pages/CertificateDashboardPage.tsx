@@ -18,9 +18,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { certificateService } from "../services/certificateService"
 import { Certificate } from "../types"
+import { useAuth } from "../context/AuthContext"
+import { formatFullName } from "../lib/greeting"
 
 export default function CertificateDashboardPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [certificates, setCertificates] = useState<Certificate[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [shareModalCert, setShareModalCert] = useState<Certificate | null>(null)
@@ -151,11 +154,11 @@ export default function CertificateDashboardPage() {
                 {/* Email */}
                 <a
                   href={`mailto:?subject=${encodeURIComponent(
-                    `Verified Certificate: ${shareModalCert.domainName} - PathLearn`
+                    `Verified Certificate: ${shareModalCert.roleName || user?.targetRole || shareModalCert.domainName} - PathLearn`
                   )}&body=${encodeURIComponent(
-                    `Hi,\n\nI recently completed the ${shareModalCert.domainName} track on PathLearn with a performance score of ${shareModalCert.score}%.\n\nYou can view and verify my authentic certificate here:\n${window.location.origin}/verify/${
+                    `Hi,\n\nI recently completed the ${shareModalCert.roleName || user?.targetRole || shareModalCert.domainName} track on PathLearn with a performance score of ${shareModalCert.score}%.\n\nYou can view and verify my authentic certificate here:\n${window.location.origin}/verify/${
                       shareModalCert.certificateCode || shareModalCert.certificateId
-                    }\n\nBest regards,\n${shareModalCert.recipientName}`
+                    }\n\nBest regards,\n${formatFullName(user?.name || shareModalCert.recipientName)}`
                   )}`}
                   className="flex flex-col items-center justify-center p-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 hover:bg-purple-500/20 text-purple-500 text-xs font-semibold transition-colors"
                 >
@@ -253,7 +256,7 @@ export default function CertificateDashboardPage() {
 
                   <div className="space-y-1">
                     <h3 className="text-base font-bold text-foreground group-hover:text-amber-500 transition-colors">
-                      {cert.domainName}
+                      {cert.roleName || user?.targetRole || cert.domainName}
                     </h3>
                     <p className="text-xs text-muted-foreground font-medium">
                       PathLearn Professional Certificate

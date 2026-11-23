@@ -11,6 +11,7 @@ import {
   saveCertificatePDF,
 } from "../services/certificateService"
 import { env } from "../config/env"
+import { formatFullName } from "../utils/formatName"
 
 /**
  * 1. POST /api/certificates/check-eligibility
@@ -45,6 +46,9 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
     // 1. Resolve user and domain
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      include: {
+        profile: true,
+      },
     })
 
     if (!user) {
@@ -70,7 +74,11 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
       },
       include: {
         domain: true,
-        user: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
     })
 
@@ -81,6 +89,9 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
         year: "numeric",
       })
 
+      const recipientName = formatFullName(existingCertificate.user.name)
+      const roleName = existingCertificate.user.profile?.targetRole || existingCertificate.domain.name
+
       return res.status(200).json({
         message: "You already earned this certificate.",
         certificate: {
@@ -89,8 +100,9 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
           certificateCode: existingCertificate.certificateCode || existingCertificate.certificateId,
           domainId: existingCertificate.domain.id,
           domainName: existingCertificate.domain.name,
+          roleName,
           domainSlug: existingCertificate.domain.slug,
-          recipientName: existingCertificate.user.name,
+          recipientName,
           score: existingCertificate.score,
           roadmapScore: existingCertificate.roadmapScore || 100,
           quizScore: existingCertificate.quizScore || 85,
@@ -130,12 +142,16 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
       eligibility.interviewScore * 0.7 + (eligibility.quizScore || 85) * 0.3
     )
 
+    const recipientName = formatFullName(user.name)
+    const roleName = user.profile?.targetRole || domain.name
+
     // 5. Generate and save PDF
     const pdfBuffer = await generateCertificatePDF({
       certificateId: certificateCode,
       certificateCode,
-      recipientName: user.name,
+      recipientName,
       domainName: domain.name,
+      roleName,
       domainSlug: domain.slug,
       score: overallScore,
       roadmapScore: 100,
@@ -166,7 +182,11 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
       },
       include: {
         domain: true,
-        user: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
     })
 
@@ -178,8 +198,9 @@ export async function generateCertificateHandler(req: AuthRequest, res: Response
         certificateCode: createdCert.certificateCode,
         domainId: createdCert.domain.id,
         domainName: createdCert.domain.name,
+        roleName: createdCert.user.profile?.targetRole || createdCert.domain.name,
         domainSlug: createdCert.domain.slug,
-        recipientName: createdCert.user.name,
+        recipientName: formatFullName(createdCert.user.name),
         score: createdCert.score,
         roadmapScore: createdCert.roadmapScore,
         quizScore: createdCert.quizScore,
@@ -210,7 +231,11 @@ export async function getUserCertificates(req: AuthRequest, res: Response) {
       where: { userId },
       include: {
         domain: true,
-        user: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
       orderBy: { issuedAt: "desc" },
     })
@@ -222,14 +247,18 @@ export async function getUserCertificates(req: AuthRequest, res: Response) {
         year: "numeric",
       })
 
+      const recipientName = formatFullName(cert.user.name)
+      const roleName = cert.user.profile?.targetRole || cert.domain.name
+
       return {
         id: cert.id,
         certificateId: cert.certificateId,
         certificateCode: cert.certificateCode || cert.certificateId,
         domainId: cert.domain.id,
         domainName: cert.domain.name,
+        roleName,
         domainSlug: cert.domain.slug,
-        recipientName: cert.user.name,
+        recipientName,
         score: cert.score,
         roadmapScore: cert.roadmapScore || 100,
         quizScore: cert.quizScore || 85,
@@ -267,7 +296,11 @@ export async function getCertificateById(req: AuthRequest, res: Response) {
       },
       include: {
         domain: true,
-        user: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
     })
 
@@ -286,6 +319,9 @@ export async function getCertificateById(req: AuthRequest, res: Response) {
       year: "numeric",
     })
 
+    const recipientName = formatFullName(cert.user.name)
+    const roleName = cert.user.profile?.targetRole || cert.domain.name
+
     return res.status(200).json({
       certificate: {
         id: cert.id,
@@ -293,8 +329,9 @@ export async function getCertificateById(req: AuthRequest, res: Response) {
         certificateCode: cert.certificateCode || cert.certificateId,
         domainId: cert.domain.id,
         domainName: cert.domain.name,
+        roleName,
         domainSlug: cert.domain.slug,
-        recipientName: cert.user.name,
+        recipientName,
         score: cert.score,
         roadmapScore: cert.roadmapScore || 100,
         quizScore: cert.quizScore || 85,
@@ -327,7 +364,11 @@ export async function downloadCertificatePDF(req: Request, res: Response) {
       },
       include: {
         domain: true,
-        user: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
     })
 
@@ -336,18 +377,9 @@ export async function downloadCertificatePDF(req: Request, res: Response) {
     }
 
     const code = cert.certificateCode || cert.certificateId
-    const uploadsDir = path.join(__dirname, "../../../uploads/certificates")
-    const filePath = path.join(uploadsDir, `${code}.pdf`)
+    const recipientName = formatFullName(cert.user.name)
+    const roleName = cert.user.profile?.targetRole || cert.domain.name
 
-    // If PDF file exists on disk, stream it
-    if (fs.existsSync(filePath)) {
-      const pdfBuffer = await fs.promises.readFile(filePath)
-      res.setHeader("Content-Type", "application/pdf")
-      res.setHeader("Content-Disposition", `attachment; filename="PathLearn-Certificate-${code}.pdf"`)
-      return res.send(pdfBuffer)
-    }
-
-    // If file missing on disk, generate dynamically on-the-fly
     const issueDateStr = new Date(cert.issuedAt).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
@@ -357,8 +389,9 @@ export async function downloadCertificatePDF(req: Request, res: Response) {
     const pdfBuffer = await generateCertificatePDF({
       certificateId: cert.certificateId,
       certificateCode: code,
-      recipientName: cert.user.name,
+      recipientName,
       domainName: cert.domain.name,
+      roleName,
       domainSlug: cert.domain.slug,
       score: cert.score,
       roadmapScore: cert.roadmapScore || 100,
@@ -402,7 +435,11 @@ export async function verifyCertificatePublic(req: Request, res: Response) {
       },
       include: {
         domain: true,
-        user: true,
+        user: {
+          include: {
+            profile: true,
+          },
+        },
       },
     })
 
@@ -437,6 +474,9 @@ export async function verifyCertificatePublic(req: Request, res: Response) {
       year: "numeric",
     })
 
+    const recipientName = formatFullName(cert.user.name)
+    const roleName = cert.user.profile?.targetRole || cert.domain.name
+
     return res.status(200).json({
       authentic: !isRevoked,
       status: isRevoked ? "REVOKED" : "ACTIVE",
@@ -446,8 +486,9 @@ export async function verifyCertificatePublic(req: Request, res: Response) {
         certificateCode: cert.certificateCode || cert.certificateId,
         domainId: cert.domain.id,
         domainName: cert.domain.name,
+        roleName,
         domainSlug: cert.domain.slug,
-        recipientName: cert.user.name,
+        recipientName,
         score: cert.score,
         roadmapScore: cert.roadmapScore || 100,
         quizScore: cert.quizScore || 85,

@@ -241,6 +241,7 @@ export interface Certificate {
   certificateCode?: string
   domainId: string
   domainName: string
+  roleName?: string
   domainSlug: string
   recipientName: string
   score: number

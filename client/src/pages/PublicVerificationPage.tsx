@@ -177,8 +177,8 @@ export default function PublicVerificationPage() {
               </div>
 
               <div className="space-y-1">
-                <span className="text-[11px] text-muted-foreground font-medium">Learning Domain</span>
-                <p className="font-bold text-indigo-400">{cert.domainName}</p>
+                <span className="text-[11px] text-muted-foreground font-medium">Certified Track / Role</span>
+                <p className="font-bold text-indigo-400">{cert.roleName || cert.domainName}</p>
               </div>
 
               <div className="space-y-1">

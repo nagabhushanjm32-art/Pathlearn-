@@ -666,9 +666,11 @@ export async function transcribeAudio(req: AuthRequest, res: Response) {
       const cleanMime = mimeType.split(";")[0] || "audio/webm"
 
       const candidateAudioModels = [
+        "gemini-flash-lite-latest",
+        "gemini-3.5-flash",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
         "gemini-2.5-flash",
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
       ]
 
       for (const modelName of candidateAudioModels) {

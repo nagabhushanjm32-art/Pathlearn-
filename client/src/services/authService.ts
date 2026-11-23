@@ -4,6 +4,7 @@ import { currentUser as defaultMockUser } from "../data/user"
 
 export interface AuthResponse {
   message?: string
+  token?: string
   user: {
     id: string
     name: string
@@ -50,6 +51,13 @@ export const authService = {
       password,
       confirmPassword: confirmPassword || password,
     })
+    if (res.data?.token) {
+      try {
+        localStorage.setItem("pathlearn_token", res.data.token)
+      } catch {
+        // ignore
+      }
+    }
     return transformToUserProfile(res.data.user)
   },
 
@@ -61,14 +69,30 @@ export const authService = {
       email,
       password,
     })
+    if (res.data?.token) {
+      try {
+        localStorage.setItem("pathlearn_token", res.data.token)
+      } catch {
+        // ignore
+      }
+    }
     return transformToUserProfile(res.data.user)
   },
 
   /**
-   * Real logout endpoint clearing HTTP-only cookie
+   * Real logout endpoint clearing HTTP-only cookie and local token
    */
   async logout(): Promise<void> {
-    await api.post("/auth/logout")
+    try {
+      localStorage.removeItem("pathlearn_token")
+    } catch {
+      // ignore
+    }
+    try {
+      await api.post("/auth/logout")
+    } catch {
+      // ignore
+    }
   },
 
   /**
@@ -76,6 +100,14 @@ export const authService = {
    */
   async getCurrentUser(): Promise<UserProfile> {
     const res = await api.get<MeResponse>("/auth/me")
+    return transformToUserProfile(res.data.user)
+  },
+
+  /**
+   * Update profile endpoint persisting name and targetRole to database
+   */
+  async updateUserProfile(updates: { name?: string; targetRole?: string; avatarUrl?: string }): Promise<UserProfile> {
+    const res = await api.put<{ message: string; user: AuthResponse["user"] }>("/profile", updates)
     return transformToUserProfile(res.data.user)
   },
 }

@@ -9,7 +9,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>
   register: (name: string, email: string, pass: string, confirmPass?: string) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
-  updateProfile: (updates: Partial<UserProfile>) => void
+  updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile | void>
   checkAuth: () => Promise<void>
 }
 
@@ -81,8 +81,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const updateProfile = (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    // 1. Optimistically update local state
     setUser((prev: UserProfile | null) => (prev ? { ...prev, ...updates } : null))
+
+    // 2. Persist to server database
+    try {
+      const persistedUser = await authService.updateUserProfile({
+        name: updates.name,
+        targetRole: updates.targetRole,
+        avatarUrl: updates.avatarUrl,
+      })
+      setUser(persistedUser)
+      return persistedUser
+    } catch (err) {
+      console.warn("Failed to persist profile update to database:", err)
+    }
   }
 
   return (

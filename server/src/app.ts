@@ -30,9 +30,28 @@ const app = express()
 
 // 1. Security & Core Middleware
 app.use(helmet())
+
+const allowedOrigins = [
+  env.clientUrl,
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://pathlearn-git-main-path-8609.vercel.app",
+].filter(Boolean) as string[]
+
 app.use(
   cors({
-    origin: env.clientUrl || "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true)
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app") ||
+        origin.includes("localhost")
+      ) {
+        return callback(null, true)
+      }
+      return callback(null, true) // Allow all web origins with credentials
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

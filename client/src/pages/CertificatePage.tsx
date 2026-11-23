@@ -7,6 +7,7 @@ import { domainService } from "../services/domainService"
 import { useAuth } from "../context/AuthContext"
 import { Certificate, Domain } from "../types"
 import { Button } from "@/components/ui/button"
+import { formatFullName } from "../lib/greeting"
 
 export default function CertificatePage() {
   const { domainId } = useParams<{ domainId: string }>()
@@ -45,7 +46,8 @@ export default function CertificatePage() {
           // Guarantee logged-in user name and domain name are reflected
           const updatedCert: Certificate = {
             ...cert,
-            recipientName: user?.name || cert.recipientName || "Student Graduate",
+            recipientName: formatFullName(user?.name || cert.recipientName || "Student Graduate"),
+            roleName: user?.targetRole || cert.roleName || currentDomain?.name || cert.domainName,
             domainName: currentDomain?.name || cert.domainName,
             domainSlug: currentDomain?.slug || cert.domainSlug || currentSlug,
             skillsDemonstrated:

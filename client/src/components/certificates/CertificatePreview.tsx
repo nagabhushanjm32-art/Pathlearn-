@@ -2,6 +2,8 @@ import React, { useState } from "react"
 import { Award, Download, Share2, Check, ExternalLink, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Certificate } from "../../types"
+import { useAuth } from "../../context/AuthContext"
+import { formatFullName } from "../../lib/greeting"
 
 interface CertificatePreviewProps {
   certificate: Certificate
@@ -9,6 +11,10 @@ interface CertificatePreviewProps {
 
 export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ certificate }) => {
   const [copied, setCopied] = useState(false)
+  const { user } = useAuth()
+
+  const recipientName = formatFullName(user?.name || certificate.recipientName)
+  const roleName = certificate.roleName || user?.targetRole || certificate.domainName
 
   const handleCopyLink = () => {
     const fullUrl = `${window.location.origin}/verify/${certificate.certificateId}`
@@ -50,7 +56,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ certific
           {/* Recipient Name */}
           <div className="py-2">
             <h2 className="text-2xl sm:text-4xl font-bold text-foreground tracking-tight underline decoration-amber-500/40 underline-offset-8">
-              {certificate.recipientName}
+              {recipientName}
             </h2>
           </div>
 
@@ -58,7 +64,7 @@ export const CertificatePreview: React.FC<CertificatePreviewProps> = ({ certific
           <div className="max-w-xl mx-auto text-xs sm:text-sm text-muted-foreground leading-relaxed">
             has successfully completed the comprehensive AI-curated curriculum, rigorous quizzes, and AI mock interview evaluations for
             <div className="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-2">
-              {certificate.domainName}
+              {roleName}
             </div>
             <span className="text-xs text-muted-foreground block mt-1">
               and has demonstrated verified mastery of industry-standard skills.

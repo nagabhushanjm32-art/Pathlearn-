@@ -33,6 +33,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     return res.status(201).json({
       message: "Account created successfully",
       user,
+      token,
     })
   } catch (error) {
     next(error)
@@ -53,6 +54,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     return res.status(200).json({
       message: "Logged in successfully",
       user,
+      token,
     })
   } catch (error) {
     next(error)

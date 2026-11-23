@@ -9,6 +9,19 @@ export const api: AxiosInstance = axios.create({
   timeout: 60000,
 })
 
+// Request interceptor to attach Authorization Bearer token from localStorage
+api.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem("pathlearn_token")
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+  } catch {
+    // ignore in environments where localStorage is unavailable
+  }
+  return config
+})
+
 // Response interceptor for consistent error extraction
 api.interceptors.response.use(
   (response) => response,

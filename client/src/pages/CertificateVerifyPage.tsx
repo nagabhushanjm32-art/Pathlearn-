@@ -77,8 +77,8 @@ export default function CertificateVerifyPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <span className="text-[11px] font-medium text-muted-foreground">Learning Domain</span>
-                  <p className="font-bold text-indigo-500">{cert.domainName}</p>
+                  <span className="text-[11px] font-medium text-muted-foreground">Certified Track / Role</span>
+                  <p className="font-bold text-indigo-500">{cert.roleName || cert.domainName}</p>
                 </div>
 
                 <div className="space-y-1">

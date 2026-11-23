@@ -27,6 +27,7 @@ export interface CertificatePDFData {
   certificateCode: string
   recipientName: string
   domainName: string
+  roleName?: string
   domainSlug: string
   score: number
   roadmapScore: number
@@ -321,7 +322,7 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
   })
 
   // 4. Recipient Name Prominent
-  const nameText = data.recipientName.toUpperCase()
+  const nameText = (data.recipientName || "Learner").toUpperCase()
   const nameWidth = fontTimesBold.widthOfTextAtSize(nameText, 32)
   page.drawText(nameText, {
     x: (width - nameWidth) / 2,
@@ -339,7 +340,7 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
     thickness: 1.5,
   })
 
-  // 5. Achievement Description & Domain
+  // 5. Achievement Description & Domain / Finished Role
   const descLine1 = "for successfully completing the rigorous AI-curated curriculum, hands-on milestones,"
   const descLine2 = "module assessments, and adaptive AI mock interview evaluation for"
   const d1Width = fontHelvetica.widthOfTextAtSize(descLine1, 11)
@@ -360,10 +361,10 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
     color: textMuted,
   })
 
-  // Domain Name
-  const domainText = data.domainName.toUpperCase()
-  const domainWidth = fontHelveticaBold.widthOfTextAtSize(domainText, 20)
-  page.drawText(domainText, {
+  // Domain / Finished Role Name
+  const roleText = (data.roleName || data.domainName).toUpperCase()
+  const domainWidth = fontHelveticaBold.widthOfTextAtSize(roleText, 20)
+  page.drawText(roleText, {
     x: (width - domainWidth) / 2,
     y: height - 295,
     size: 20,

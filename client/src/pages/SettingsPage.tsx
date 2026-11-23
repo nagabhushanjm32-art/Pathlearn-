@@ -1,7 +1,7 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useTheme } from "../context/ThemeContext"
 import { useAuth } from "../context/AuthContext"
-import { Bell, Moon, Sun, Shield, User, Check } from "lucide-react"
+import { Bell, Moon, Sun, Shield, User, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function SettingsPage() {
@@ -12,13 +12,25 @@ export default function SettingsPage() {
   const [targetRole, setTargetRole] = useState(user?.targetRole || "AI / ML Engineer")
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [interviewAudio, setInterviewAudio] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [savedMessage, setSavedMessage] = useState(false)
 
-  const handleSave = (e: React.FormEvent) => {
+  // Keep fields synced if user profile refreshes
+  useEffect(() => {
+    if (user?.name) setName(user.name)
+    if (user?.targetRole) setTargetRole(user.targetRole)
+  }, [user?.name, user?.targetRole])
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    updateProfile({ name, targetRole })
-    setSavedMessage(true)
-    setTimeout(() => setSavedMessage(false), 3000)
+    setIsSaving(true)
+    try {
+      await updateProfile({ name: name.trim(), targetRole: targetRole.trim() })
+      setSavedMessage(true)
+      setTimeout(() => setSavedMessage(false), 3000)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -75,8 +87,9 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold">
-            Save Profile
+          <Button type="submit" disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold flex items-center gap-2">
+            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            <span>{isSaving ? "Saving..." : "Save Profile"}</span>
           </Button>
         </form>
       </div>

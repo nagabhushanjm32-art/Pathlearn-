@@ -24,6 +24,7 @@ import { certificateService } from "../services/certificateService"
 import { domainService } from "../services/domainService"
 import { useAuth } from "../context/AuthContext"
 import { Certificate, CertificateEligibility, Domain } from "../types"
+import { formatFullName } from "../lib/greeting"
 
 export default function CertificateViewPage() {
   const { id, domainId } = useParams<{ id?: string; domainId?: string }>()
@@ -254,10 +255,10 @@ export default function CertificateViewPage() {
                 <span>Verified Achievement</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {certificate.domainName} Certificate
+                {certificate.roleName || user?.targetRole || certificate.domainName} Certificate
               </h1>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Issued to <strong className="text-foreground">{certificate.recipientName}</strong> on {certificate.issueDate}. Performance Score: <strong className="text-emerald-500">{certificate.score}%</strong>.
+                Issued to <strong className="text-foreground">{formatFullName(user?.name || certificate.recipientName)}</strong> on {certificate.issueDate}. Performance Score: <strong className="text-emerald-500">{certificate.score}%</strong>.
               </p>
             </div>
 
