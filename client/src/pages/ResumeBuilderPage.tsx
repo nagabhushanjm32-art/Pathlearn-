@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "../context/AuthContext"
+import { exportResumeToPdf, exportResumeToTxt } from "../lib/resumePdfExporter"
 import {
   resumeBuilderService,
   ResumeData,
@@ -78,6 +79,7 @@ export const ResumeBuilderPage: React.FC = () => {
   const [aiGenerating, setAiGenerating] = useState(false)
   const [zoomLevel, setZoomLevel] = useState<number>(100)
   const [copied, setCopied] = useState(false)
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null)
 
   // Job Description Optimization State
   const [jobDescriptionInput, setJobDescriptionInput] = useState("")
@@ -281,7 +283,36 @@ export const ResumeBuilderPage: React.FC = () => {
     }
   }
 
-  // Print PDF
+  // Direct PDF Download to User's Files
+  const handleDownloadPdf = (targetResume?: ResumeData) => {
+    const target = targetResume || activeResume
+    if (!target) return
+    try {
+      exportResumeToPdf(target)
+      const name = target.personalInfo?.fullName || "Resume"
+      setDownloadNotice(`Downloaded "${name}_Resume.pdf" directly to your files! Check your Downloads folder.`)
+      setTimeout(() => setDownloadNotice(null), 5000)
+    } catch (err) {
+      console.error("PDF export error:", err)
+      window.print()
+    }
+  }
+
+  // Direct ATS Plain Text Download to User's Files
+  const handleDownloadTxt = (targetResume?: ResumeData) => {
+    const target = targetResume || activeResume
+    if (!target) return
+    try {
+      exportResumeToTxt(target)
+      const name = target.personalInfo?.fullName || "Resume"
+      setDownloadNotice(`Downloaded "${name}_Resume.txt" directly to your files! Check your Downloads folder.`)
+      setTimeout(() => setDownloadNotice(null), 5000)
+    } catch (err) {
+      console.error("TXT export error:", err)
+    }
+  }
+
+  // Print PDF / Browser Dialog
   const handlePrint = () => {
     window.print()
   }
@@ -392,19 +423,55 @@ export const ResumeBuilderPage: React.FC = () => {
         </div>
 
         {activeResume && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Button
+              size="sm"
+              onClick={() => handleDownloadPdf(activeResume)}
+              className="text-xs h-8 px-3 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg cursor-pointer shadow-xs font-semibold"
+              title="Download ATS-Friendly PDF directly to your laptop"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download PDF</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDownloadTxt(activeResume)}
+              className="text-xs h-8 px-2.5 gap-1.5 rounded-lg cursor-pointer shadow-xs border-border/80 text-muted-foreground hover:text-foreground"
+              title="Download ATS Plain Text (.txt) directly to your laptop"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">ATS Text</span>
+            </Button>
             <Button
               size="sm"
               variant="outline"
               onClick={handlePrint}
-              className="text-xs h-8 px-3 gap-1.5 rounded-lg cursor-pointer shadow-xs"
+              className="text-xs h-8 px-2.5 gap-1.5 rounded-lg cursor-pointer shadow-xs border-border/80 text-muted-foreground hover:text-foreground"
+              title="Open Browser Print Dialog"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
+              <span className="hidden sm:inline">Print</span>
             </Button>
           </div>
         )}
       </div>
+
+      {/* Download Notification Toast Banner */}
+      {downloadNotice && (
+        <div className="print:hidden p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-between text-xs font-semibold animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{downloadNotice}</span>
+          </div>
+          <button
+            onClick={() => setDownloadNotice(null)}
+            className="text-emerald-400 hover:text-emerald-200 text-xs px-2 py-0.5 rounded cursor-pointer"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 1. DASHBOARD VIEW: MY RESUMES & VERSION MANAGEMENT */}
@@ -494,6 +561,13 @@ export const ResumeBuilderPage: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleDownloadPdf(res)}
+                        className="p-1.5 rounded-lg hover:bg-indigo-500/10 text-muted-foreground hover:text-indigo-400 cursor-pointer"
+                        title="Download PDF directly to laptop"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
                       <button
                         onClick={() => handleDuplicate(res.id)}
                         className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
@@ -1699,14 +1773,37 @@ export const ResumeBuilderPage: React.FC = () => {
                 </button>
               </div>
 
-              <Button
-                size="sm"
-                onClick={handlePrint}
-                className="text-xs h-8 px-3 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Download PDF / Print</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => handleDownloadPdf(activeResume)}
+                  className="text-xs h-8 px-3.5 gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md cursor-pointer"
+                  title="Directly save PDF file to your laptop"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDownloadTxt(activeResume)}
+                  className="text-xs h-8 px-2.5 gap-1.5 rounded-xl cursor-pointer border-border/80 text-muted-foreground hover:text-foreground"
+                  title="Download ATS Plain Text (.txt)"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">ATS Text</span>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handlePrint}
+                  className="text-xs h-8 px-2.5 gap-1.5 rounded-xl cursor-pointer border-border/80 text-muted-foreground hover:text-foreground"
+                  title="Open Print Dialog"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Print</span>
+                </Button>
+              </div>
             </div>
           </div>
 
