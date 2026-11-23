@@ -12,8 +12,8 @@ async function testResearchPaper() {
       customKeywords: ["Internet of Things (IoT)", "Emergency Vehicles", "Traffic Congestion", "Sound Sensors", "ESP32"],
       additionalInstructions: "Format identical to ISO 9001:2008 / IJIRCCE conference paper",
     },
-    "Ms. Shilpa d R",
-    "Dept. of CSE, Jain Institute of Technology, Davangere, Karnataka, India"
+    "Lead Author",
+    "Dept. of Computer Science & Engineering"
   )
 
   console.log("\n1. Paper Generated Successfully!")

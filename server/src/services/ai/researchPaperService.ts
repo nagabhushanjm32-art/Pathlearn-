@@ -10,6 +10,11 @@ export interface ResearchPaperRequest {
   academicLevel?: AcademicLevel
   customKeywords?: string[]
   additionalInstructions?: string
+  authorName?: string
+  authorRole?: string
+  affiliation?: string
+  coAuthors?: string[]
+  guideName?: string
 }
 
 export interface HardwareSoftwareItem {
@@ -129,8 +134,8 @@ export const researchPaperService = {
    */
   async generatePaper(
     params: ResearchPaperRequest,
-    userName: string = "Dr. Punith K R",
-    userAffiliation: string = "Dept. of Computer Science & Engineering, PathLearn Institute of Technology"
+    userName: string = "Lead Researcher",
+    userAffiliation: string = "Department of Computer Science & Engineering"
   ): Promise<GeneratedResearchPaper> {
     const {
       topic,
@@ -139,7 +144,14 @@ export const researchPaperService = {
       academicLevel = "Undergraduate",
       customKeywords = [],
       additionalInstructions = "",
+      coAuthors = [],
+      authorRole = "Lead Researcher",
+      guideName = "",
     } = params
+
+    const finalPrimaryAuthor = (params.authorName && params.authorName.trim()) || userName || "Lead Researcher"
+    const finalAffiliation = (params.affiliation && params.affiliation.trim()) || userAffiliation || "Department of Computer Science & Engineering"
+    const finalCoAuthors = Array.isArray(coAuthors) ? coAuthors.filter(Boolean) : []
 
     const prompt = `You are a world-class academic researcher, peer reviewer, and senior journal editor.
 Your task is to write a comprehensive, publication-ready academic research paper on the topic: "${topic}".
@@ -147,14 +159,16 @@ Your task is to write a comprehensive, publication-ready academic research paper
 DOMAIN: ${domain}
 FORMAT: ${formatStyle}
 ACADEMIC LEVEL: ${academicLevel}
-PRIMARY AUTHOR: ${userName}
-AFFILIATION: ${userAffiliation}
+PRIMARY AUTHOR: ${finalPrimaryAuthor} (${authorRole})
+AFFILIATION: ${finalAffiliation}
+${finalCoAuthors.length > 0 ? `CO-AUTHORS: ${finalCoAuthors.join(", ")}` : "CO-AUTHORS: None (Solo author paper)"}
+${guideName ? `PROJECT GUIDE / MENTOR: ${guideName}` : ""}
 ${customKeywords.length > 0 ? `KEYWORDS: ${customKeywords.join(", ")}` : ""}
 ${additionalInstructions ? `ADDITIONAL INSTRUCTIONS: ${additionalInstructions}` : ""}
 
 Strictly generate all of the following 12 academic sections matching formal conference/journal proceedings:
 1. Title: Clear, formal academic title for the paper
-2. Authors: Primary author (${userName}, Assistant Professor / Senior Researcher) + 4 student co-authors with department & institute affiliation.
+2. Authors: Primary author (${finalPrimaryAuthor}) with affiliation (${finalAffiliation})${finalCoAuthors.length > 0 ? `, and co-authors: ${finalCoAuthors.join(", ")}` : ""}.
 3. Abstract: 200-280 words dense academic abstract covering background, proposed system, working mechanism, hardware/software, results, and smart infrastructure value.
 4. Keywords: 6 to 9 specific technical keywords.
 5. Section I. INTRODUCTION: Background, societal importance, critical delays/issues in conventional setups, and proposed intelligent system.
@@ -182,7 +196,7 @@ Strictly generate all of the following 12 academic sections matching formal conf
     - 8. Future Scope (bullet list of 5 future directions)
     - Figure list (Fig.5 Web Dashboard, Fig.6 LCD Status Display, Fig.7 System Model, Fig.8 Physical Prototype)
 14. Section X. ACKNOWLEDGMENT:
-    - Formal institutional gratitude to project guide, coordinators, HOD, Principal, and faculty members.
+    - Formal institutional gratitude to ${guideName ? `project guide ${guideName}` : "faculty mentors and project advisors"}, departmental coordinators, and institutional leadership of ${finalAffiliation}. Never include fictional or random names.
 15. Section XI. REFERENCES:
     - 15 to 24 rigorously formatted journal/conference citations (e.g., IEEE, IJRASET, IJERT, JETIR, arXiv, Springer) with real authors, paper titles, journals, volume, issue, year, and pages.
 
@@ -196,17 +210,44 @@ OUTPUT FORMAT: Strict JSON only matching the schema.`
 
       if (generated && generated.title && generated.abstract) {
         const report = this.generatePlagiarismReport(generated, formatStyle)
-        const latexSource = this.buildLatexSource(generated, formatStyle, userName, userAffiliation)
+        const finalAuthors = {
+          primaryAuthor: finalPrimaryAuthor,
+          primaryRole: authorRole,
+          primaryAffiliation: finalAffiliation,
+          coAuthors: finalCoAuthors,
+          studentAffiliation: finalCoAuthors.length > 0 ? finalAffiliation : "",
+        }
+
+        const latexSource = this.buildLatexSource(
+          { ...generated, authors: finalAuthors },
+          formatStyle,
+          finalPrimaryAuthor,
+          finalAffiliation
+        )
+
+        // Ensure acknowledgment never contains hardcoded names
+        let ackContent = generated.sections?.acknowledgment?.content
+        if (
+          !ackContent ||
+          ackContent.includes("Shilpa") ||
+          ackContent.includes("Monika") ||
+          ackContent.includes("Bhoomika") ||
+          ackContent.includes("Deepthi")
+        ) {
+          const guideStr = guideName
+            ? `their project guide and mentor, ${guideName}`
+            : "their project guide, faculty advisors, and departmental mentors"
+          ackContent = `The authors express their sincere gratitude to ${guideStr}, for continuous guidance, valuable feedback, and encouragement throughout the development of this research work.\n\nSpecial thanks are extended to the faculty members, departmental coordinators, and institutional leadership of ${finalAffiliation} for providing the necessary computing resources, laboratory facilities, and institutional support.\n\nFinally, the authors acknowledge the helpful suggestions from academic peers and the constant encouragement provided by family and colleagues.`
+        }
+
+        if (generated.sections?.acknowledgment) {
+          generated.sections.acknowledgment.content = ackContent
+        }
+
         return {
           id: `paper-${Date.now()}`,
           title: generated.title,
-          authors: generated.authors || {
-            primaryAuthor: userName,
-            primaryRole: "Assistant Professor",
-            primaryAffiliation: userAffiliation,
-            coAuthors: ["Monika T", "Deepthi Patel K S", "Anusha", "Bhoomika S J"],
-            studentAffiliation: "UG Students, Dept. of ISE/CSE, PathLearn Institute of Technology, India",
-          },
+          authors: finalAuthors,
           abstract: generated.abstract,
           keywords: generated.keywords || ["Internet of Things (IoT)", "Emergency Vehicles", "Traffic Congestion", "Real-time Monitoring", "Sensors"],
           formatStyle,
@@ -222,7 +263,17 @@ OUTPUT FORMAT: Strict JSON only matching the schema.`
       throw new Error("Generated JSON missing required fields")
     } catch (error) {
       console.warn("AI Research Paper JSON generation fallback triggered:", error)
-      return this.buildFallbackPaper(topic, domain, formatStyle, academicLevel, userName, userAffiliation)
+      return this.buildFallbackPaper(
+        topic,
+        domain,
+        formatStyle,
+        academicLevel,
+        finalPrimaryAuthor,
+        finalAffiliation,
+        finalCoAuthors,
+        authorRole,
+        guideName
+      )
     }
   },
 
@@ -277,6 +328,24 @@ OUTPUT FORMAT: Strict JSON only matching the schema.`
   ): string {
     const isIeee = formatStyle === "IEEE"
     const pTitle = paper.title || "Academic Research Paper"
+    const primAuthor = paper.authors?.primaryAuthor || userName
+    const primAffil = paper.authors?.primaryAffiliation || affiliation
+    const coAuthors: string[] = paper.authors?.coAuthors || []
+    const studentAffil = paper.authors?.studentAffiliation || primAffil
+
+    let authorsLatex = ""
+    if (isIeee) {
+      const blocks = [
+        `  \\IEEEauthorblockN{${primAuthor}}\n  \\IEEEauthorblockA{\\textit{${primAffil}}\\\\\n  Email: correspondence@pathlearn.edu}`
+      ]
+      coAuthors.forEach((ca) => {
+        blocks.push(`  \\IEEEauthorblockN{${ca}}\n  \\IEEEauthorblockA{\\textit{${studentAffil}}}`)
+      })
+      authorsLatex = blocks.join("\n  \\and\n")
+    } else {
+      const allNames = [primAuthor, ...coAuthors]
+      authorsLatex = allNames.join(" \\and ")
+    }
 
     return `% --------------------------------------------------
 % Research Paper Generated by PathLearn Academic Studio
@@ -298,9 +367,7 @@ OUTPUT FORMAT: Strict JSON only matching the schema.`
 \\title{${pTitle}}
 
 \\author{
-  \\IEEEauthorblockN{${paper.authors?.primaryAuthor || userName}}
-  \\IEEEauthorblockA{\\textit{${paper.authors?.primaryAffiliation || affiliation}}\\\\
-  Email: correspondence@pathlearn.edu}
+${authorsLatex}
 }
 
 \\maketitle
@@ -370,8 +437,11 @@ ${(paper.references || []).map((ref: string, idx: number) => `\\bibitem{ref${idx
     domain: string,
     formatStyle: FormatStyle,
     academicLevel: AcademicLevel,
-    userName: string,
-    userAffiliation: string
+    userName: string = "Lead Researcher",
+    userAffiliation: string = "Department of Computer Science & Engineering",
+    coAuthors: string[] = [],
+    authorRole: string = "Lead Researcher",
+    guideName: string = ""
   ): GeneratedResearchPaper {
     const isTrafficTopic = topic.toLowerCase().includes("traffic") || topic.toLowerCase().includes("emergency")
     const title = isTrafficTopic
@@ -643,7 +713,11 @@ ${(paper.references || []).map((ref: string, idx: number) => `\\bibitem{ref${idx
       ],
     }
 
-    const acknowledgmentContent = `The authors express their sincere gratitude to their project guide, Asst.Prof. Shilpa D R., Department of Computer Science & Engineering, JIT, Davangere, for her continuous guidance, valuable feedback, and encouragement throughout the development of this work.\n\nThe authors also thank Ms. Vaishnavi C. S. and Ms. Thanu M. R., Project Coordinators, for their support during the project period. Special thanks are extended to Dr. H. S. Saraswathi, Professor & Head, Department of IS&E, and Dr. Ganesh D. B., Principal & Director, JIT, for providing necessary facilities and institutional support.\n\nThe authors are grateful to the faculty members of the Department of IS&E for their helpful suggestions and support. Finally, the authors acknowledge the constant encouragement provided by their family and friends.`
+    const guideStr = guideName
+      ? `their project guide and mentor, ${guideName}`
+      : "their project guide, faculty advisors, and departmental mentors"
+
+    const acknowledgmentContent = `The authors express their sincere gratitude to ${guideStr}, for continuous guidance, valuable feedback, and encouragement throughout the development of this research work.\n\nSpecial thanks are extended to the faculty members, departmental coordinators, and institutional leadership of ${userAffiliation} for providing the necessary facilities, computing infrastructure, and continuous academic support.\n\nFinally, the authors acknowledge the helpful suggestions from academic peers and the constant encouragement provided by family and colleagues.`
 
     const references = [
       '1. I. Bhalla, M. Shivhare, P. Nishane, T. Shandy and A. Sheikh, "IoT-Enabled Smart Traffic Management and Alert System with Green Corridor for Emergency Vehicles," IJRASET Journal for Research in Applied Science and Engineering Technology, vol. 1, no. 2, pp. 193-206, Aug. 2025. IJRASET',
@@ -676,11 +750,11 @@ ${(paper.references || []).map((ref: string, idx: number) => `\\bibitem{ref${idx
       id: `paper-${Date.now()}`,
       title,
       authors: {
-        primaryAuthor: "Ms. Shilpa d R",
-        primaryRole: "Assistant Professor",
-        primaryAffiliation: "Dept. of CSE, Jain Institute of Technology, Davangere, Karnataka, India",
-        coAuthors: ["Monika T", "Deepthi Patel K S", "Anusha", "Bhoomika S J"],
-        studentAffiliation: "UG Students, Dept. of ISE, Jain Institute of Technology, Davangere, Karnataka, India",
+        primaryAuthor: userName,
+        primaryRole: authorRole,
+        primaryAffiliation: userAffiliation,
+        coAuthors: coAuthors,
+        studentAffiliation: coAuthors.length > 0 ? userAffiliation : "",
       },
       abstract,
       keywords,

@@ -11,7 +11,10 @@ export async function generateResearchPaper(req: Request, res: Response): Promis
       customKeywords = [],
       additionalInstructions = "",
       authorName,
+      authorRole = "Lead Researcher",
       affiliation,
+      coAuthors = [],
+      guideName = "",
     } = req.body
 
     if (!topic || typeof topic !== "string" || !topic.trim()) {
@@ -20,8 +23,31 @@ export async function generateResearchPaper(req: Request, res: Response): Promis
     }
 
     const userObj = (req as any).user
-    const finalAuthorName = authorName || (userObj?.profile?.fullName || userObj?.username || "Researcher")
-    const finalAffiliation = affiliation || "Department of Advanced Computing & Research, PathLearn Academy"
+    const finalAuthorName =
+      authorName && typeof authorName === "string" && authorName.trim()
+        ? authorName.trim()
+        : userObj?.profile?.fullName || userObj?.username || "Lead Researcher"
+
+    const finalAffiliation =
+      affiliation && typeof affiliation === "string" && affiliation.trim()
+        ? affiliation.trim()
+        : "Department of Computer Science & Engineering"
+
+    const finalAuthorRole =
+      authorRole && typeof authorRole === "string" && authorRole.trim()
+        ? authorRole.trim()
+        : "Lead Researcher"
+
+    const finalCoAuthors: string[] = Array.isArray(coAuthors)
+      ? coAuthors.map((c: any) => String(c).trim()).filter(Boolean)
+      : typeof coAuthors === "string"
+      ? (coAuthors as string)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+
+    const finalGuideName = typeof guideName === "string" ? guideName.trim() : ""
 
     const paper = await researchPaperService.generatePaper(
       {
@@ -31,6 +57,9 @@ export async function generateResearchPaper(req: Request, res: Response): Promis
         academicLevel: academicLevel as AcademicLevel,
         customKeywords: Array.isArray(customKeywords) ? customKeywords : [],
         additionalInstructions,
+        coAuthors: finalCoAuthors,
+        authorRole: finalAuthorRole,
+        guideName: finalGuideName,
       },
       finalAuthorName,
       finalAffiliation

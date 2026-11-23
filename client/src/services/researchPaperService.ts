@@ -11,7 +11,10 @@ export interface ResearchPaperRequest {
   customKeywords?: string[]
   additionalInstructions?: string
   authorName?: string
+  authorRole?: string
   affiliation?: string
+  coAuthors?: string[] | string
+  guideName?: string
 }
 
 export interface HardwareSoftwareItem {
@@ -198,8 +201,18 @@ function getFallbackPaper(params: ResearchPaperRequest): GeneratedResearchPaper 
   const isTrafficTopic = topic.toLowerCase().includes("traffic") || topic.toLowerCase().includes("emergency")
   const formatStyle = params.formatStyle || "Journal Standard"
   const academicLevel = params.academicLevel || "Undergraduate"
-  const authorName = params.authorName || (isTrafficTopic ? "Ms. Shilpa d R" : "Dr. Punith K R")
-  const primaryAffiliation = params.affiliation || (isTrafficTopic ? "Dept. of CSE, Jain Institute of Technology, Davangere, Karnataka, India" : "Dept. of Computer Science & Engineering, PathLearn Institute of Technology, India")
+  const authorName = (params.authorName && params.authorName.trim()) || "Lead Researcher"
+  const authorRole = (params.authorRole && params.authorRole.trim()) || (academicLevel === "Undergraduate" ? "Student Researcher" : "Lead Researcher")
+  const primaryAffiliation = (params.affiliation && params.affiliation.trim()) || "Department of Computer Science & Engineering"
+  const coAuthors: string[] = Array.isArray(params.coAuthors)
+    ? params.coAuthors.map((s) => s.trim()).filter(Boolean)
+    : typeof params.coAuthors === "string"
+    ? (params.coAuthors as string)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : []
+  const studentAffiliation = coAuthors.length > 0 ? primaryAffiliation : ""
 
   const title = isTrafficTopic
     ? "Automatic Traffic Signal System for Emergency Vehicle Clearance"
@@ -438,7 +451,11 @@ function getFallbackPaper(params: ResearchPaperRequest): GeneratedResearchPaper 
     ],
   }
 
-  const acknowledgmentContent = `The authors express their sincere gratitude to their project guide, Asst.Prof. Shilpa D R., Department of Computer Science & Engineering, JIT, Davangere, for her continuous guidance, valuable feedback, and encouragement throughout the development of this work.\n\nThe authors also thank Ms. Vaishnavi C. S. and Ms. Thanu M. R., Project Coordinators, for their support during the project period. Special thanks are extended to Dr. H. S. Saraswathi, Professor & Head, Department of IS&E, and Dr. Ganesh D. B., Principal & Director, JIT, for providing necessary facilities and institutional support.\n\nThe authors are grateful to the faculty members of the Department of IS&E for their helpful suggestions and support. Finally, the authors acknowledge the constant encouragement provided by their family and friends.`
+  const guideStr = params.guideName?.trim()
+    ? `their project guide and mentor, ${params.guideName.trim()}`
+    : "their project guide, faculty advisors, and departmental mentors"
+
+  const acknowledgmentContent = `The authors express their sincere gratitude to ${guideStr}, for continuous guidance, valuable feedback, and encouragement throughout the development of this research work.\n\nSpecial thanks are extended to the faculty members, departmental coordinators, and institutional leadership of ${primaryAffiliation} for providing the necessary facilities, computing infrastructure, and continuous academic support.\n\nFinally, the authors acknowledge the helpful suggestions from academic peers and the constant encouragement provided by family and colleagues.`
 
   const references = [
     '1. I. Bhalla, M. Shivhare, P. Nishane, T. Shandy and A. Sheikh, "IoT-Enabled Smart Traffic Management and Alert System with Green Corridor for Emergency Vehicles," IJRASET Journal for Research in Applied Science and Engineering Technology, vol. 1, no. 2, pp. 193-206, Aug. 2025. IJRASET',
@@ -472,10 +489,10 @@ function getFallbackPaper(params: ResearchPaperRequest): GeneratedResearchPaper 
     title,
     authors: {
       primaryAuthor: authorName,
-      primaryRole: isTrafficTopic ? "Assistant Professor" : "Lead Researcher",
+      primaryRole: authorRole,
       primaryAffiliation,
-      coAuthors: ["Monika T", "Deepthi Patel K S", "Anusha", "Bhoomika S J"],
-      studentAffiliation: "UG Students, Dept. of ISE/CSE, Jain Institute of Technology, Davangere, Karnataka, India",
+      coAuthors,
+      studentAffiliation,
     },
     abstract,
     keywords,
@@ -528,7 +545,7 @@ function getFallbackPaper(params: ResearchPaperRequest): GeneratedResearchPaper 
 \\documentclass[11pt,a4paper]{article}
 \\usepackage{amsmath,amssymb,graphicx}
 \\title{${title}}
-\\author{${authorName}}
+\\author{${[authorName, ...coAuthors].join(" \\and ")}}
 \\begin{document}
 \\maketitle
 \\begin{abstract}

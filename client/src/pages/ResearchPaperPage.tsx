@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
   Sparkles,
   BookOpen,
@@ -20,6 +20,8 @@ import {
   Layers,
   ArrowRight,
   ExternalLink,
+  User,
+  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "../context/AuthContext"
@@ -38,10 +40,19 @@ export const ResearchPaperPage: React.FC = () => {
   const [domain, setDomain] = useState("Embedded Systems, IoT & Intelligent Transportation")
   const [formatStyle, setFormatStyle] = useState<FormatStyle>("Journal Standard")
   const [academicLevel, setAcademicLevel] = useState<AcademicLevel>("Undergraduate")
-  const [authorName, setAuthorName] = useState(user?.name || "Ms. Shilpa d R")
-  const [affiliation, setAffiliation] = useState("Dept. of CSE, Jain Institute of Technology, Davangere, Karnataka, India")
+  const [authorName, setAuthorName] = useState(user?.name || "")
+  const [authorRole, setAuthorRole] = useState("Lead Researcher")
+  const [coAuthorsInput, setCoAuthorsInput] = useState("")
+  const [affiliation, setAffiliation] = useState("Department of Computer Science & Engineering")
+  const [guideName, setGuideName] = useState("")
   const [customKeywords, setCustomKeywords] = useState<string>("Internet of Things (IoT), Smart Signal Clearance, Emergency Vehicles, Real-Time Traffic Monitoring, Sound Sensors")
   const [additionalInstructions, setAdditionalInstructions] = useState("")
+
+  useEffect(() => {
+    if (user?.name && !authorName) {
+      setAuthorName(user.name)
+    }
+  }, [user?.name])
 
   // Generation & View State
   const [loading, setLoading] = useState(false)
@@ -96,13 +107,21 @@ export const ResearchPaperPage: React.FC = () => {
     const timer4 = setTimeout(() => setLoadingStep("Executing Plagiarism Guard & Authenticity Verification scan..."), 4600)
 
     try {
+      const parsedCoAuthors = coAuthorsInput
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
+
       const generated = await researchPaperService.generatePaper({
         topic: finalTopic,
         domain,
         formatStyle,
         academicLevel,
-        authorName,
-        affiliation,
+        authorName: authorName.trim() || user?.name || "Lead Researcher",
+        authorRole: authorRole.trim() || "Lead Researcher",
+        affiliation: affiliation.trim() || "Department of Computer Science & Engineering",
+        coAuthors: parsedCoAuthors,
+        guideName: guideName.trim(),
         customKeywords: customKeywords.split(",").map((k) => k.trim()).filter(Boolean),
         additionalInstructions,
       })
@@ -138,13 +157,12 @@ export const ResearchPaperPage: React.FC = () => {
 
   const handleDownloadMarkdown = () => {
     if (!paper) return
+    const hasCoAuthors = paper.authors?.coAuthors && paper.authors.coAuthors.length > 0
     const mdContent = `# ${paper.title}
 
-**Primary Author:** ${paper.authors?.primaryAuthor} (${paper.authors?.primaryRole})  
-**Affiliation:** ${paper.authors?.primaryAffiliation}  
-**Co-Authors:** ${paper.authors?.coAuthors?.join(", ")}  
-**Student Affiliation:** ${paper.authors?.studentAffiliation}  
-
+**Primary Author:** ${paper.authors?.primaryAuthor || "Lead Author"} (${paper.authors?.primaryRole || "Lead Researcher"})  
+**Affiliation:** ${paper.authors?.primaryAffiliation || ""}  
+${hasCoAuthors ? `**Co-Authors:** ${paper.authors?.coAuthors?.join(", ")}  \n` : ""}${hasCoAuthors && paper.authors?.studentAffiliation ? `**Co-Author Affiliation:** ${paper.authors?.studentAffiliation}  \n` : ""}
 ---
 
 ## ABSTRACT
@@ -405,26 +423,76 @@ ${paper.references.map((r, i) => `${r.startsWith(`${i + 1}.`) ? r : `${i + 1}. $
               />
             </div>
 
-            {/* Author Information */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">Lead Author / Guide</label>
+            {/* Authors & Research Team Inputs */}
+            <div className="space-y-3 p-3.5 rounded-2xl bg-muted/40 border border-border/80">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Authors & Research Team</span>
+                </label>
+                <span className="text-[10px] text-muted-foreground">Appears in title & citation block</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-foreground">Primary Author</span>
+                  <input
+                    type="text"
+                    value={authorName}
+                    onChange={(e) => setAuthorName(e.target.value)}
+                    placeholder="e.g. Punith K R (Your Name)"
+                    className="w-full text-xs p-2.5 rounded-xl bg-background border border-border focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-foreground">Role / Designation</span>
+                  <input
+                    type="text"
+                    value={authorRole}
+                    onChange={(e) => setAuthorRole(e.target.value)}
+                    placeholder="e.g. Lead Researcher, Student"
+                    className="w-full text-xs p-2.5 rounded-xl bg-background border border-border focus:border-indigo-500 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-[11px] font-semibold text-foreground flex items-center justify-between">
+                  <span>Co-Authors / Team Members</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">Comma-separated (leave blank if solo)</span>
+                </span>
                 <input
                   type="text"
-                  value={authorName}
-                  onChange={(e) => setAuthorName(e.target.value)}
+                  value={coAuthorsInput}
+                  onChange={(e) => setCoAuthorsInput(e.target.value)}
+                  placeholder="e.g. Alex John, Sarah Connor (leave blank for solo author)"
                   className="w-full text-xs p-2.5 rounded-xl bg-background border border-border focus:border-indigo-500 outline-none"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-foreground">Affiliation</label>
-                <input
-                  type="text"
-                  value={affiliation}
-                  onChange={(e) => setAffiliation(e.target.value)}
-                  className="w-full text-xs p-2.5 rounded-xl bg-background border border-border focus:border-indigo-500 outline-none truncate"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-foreground">Department & Institution</span>
+                  <input
+                    type="text"
+                    value={affiliation}
+                    onChange={(e) => setAffiliation(e.target.value)}
+                    placeholder="e.g. Dept. of CSE, PathLearn University"
+                    className="w-full text-xs p-2.5 rounded-xl bg-background border border-border focus:border-indigo-500 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[11px] font-semibold text-foreground">Faculty Guide / Mentor (Optional)</span>
+                  <input
+                    type="text"
+                    value={guideName}
+                    onChange={(e) => setGuideName(e.target.value)}
+                    placeholder="e.g. Dr. H. S. Sharma (for Acknowledgment)"
+                    className="w-full text-xs p-2.5 rounded-xl bg-background border border-border focus:border-indigo-500 outline-none"
+                  />
+                </div>
               </div>
             </div>
 
@@ -676,14 +744,29 @@ ${paper.references.map((r, i) => `${r.startsWith(`${i + 1}.`) ? r : `${i + 1}. $
                           </h1>
                           <div className="space-y-1 font-sans text-xs">
                             <p className="font-semibold text-zinc-900">
-                              {paper.authors?.primaryAuthor}<sup>1</sup>, {paper.authors?.coAuthors?.map((ca, idx) => `${ca}${idx + 2}`).join(", ")}
+                              {paper.authors?.primaryAuthor || "Lead Author"}
+                              {paper.authors?.coAuthors && paper.authors.coAuthors.length > 0 ? (
+                                <>
+                                  <sup>1</sup>,{" "}
+                                  {paper.authors.coAuthors.map((ca, idx) => (
+                                    <span key={idx}>
+                                      {ca}<sup>{idx + 2}</sup>
+                                      {idx < paper.authors.coAuthors.length - 1 ? ", " : ""}
+                                    </span>
+                                  ))}
+                                </>
+                              ) : null}
                             </p>
                             <p className="text-zinc-600 text-[11px]">
-                              {paper.authors?.primaryRole}, {paper.authors?.primaryAffiliation}<sup>1</sup>
+                              {paper.authors?.primaryRole ? `${paper.authors.primaryRole}, ` : ""}
+                              {paper.authors?.primaryAffiliation}
+                              {paper.authors?.coAuthors && paper.authors.coAuthors.length > 0 ? <sup>1</sup> : null}
                             </p>
-                            <p className="text-zinc-600 text-[11px]">
-                              {paper.authors?.studentAffiliation}<sup>2</sup>
-                            </p>
+                            {paper.authors?.studentAffiliation && paper.authors?.coAuthors && paper.authors.coAuthors.length > 0 ? (
+                              <p className="text-zinc-600 text-[11px]">
+                                {paper.authors.studentAffiliation}<sup>2</sup>
+                              </p>
+                            ) : null}
                           </div>
                         </div>
 
