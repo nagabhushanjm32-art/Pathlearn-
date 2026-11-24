@@ -14,6 +14,8 @@ export const jobService = {
     if (filters.roleType && filters.roleType !== "All") params.append("roleType", filters.roleType)
     if (filters.location && filters.location !== "All") params.append("location", filters.location)
     if (filters.experienceLevel && filters.experienceLevel !== "All") params.append("experienceLevel", filters.experienceLevel)
+    if (filters.platform && filters.platform !== "All") params.append("platform", filters.platform)
+    if (filters.companyType && filters.companyType !== "All") params.append("companyType", filters.companyType)
     if (filters.sortBy) params.append("sortBy", filters.sortBy)
 
     const response = await api.get<{ success: boolean; data: JobsResponse }>(`/jobs?${params.toString()}`)

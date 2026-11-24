@@ -16,6 +16,7 @@ import {
   Check,
   ExternalLink,
   GraduationCap,
+  Globe,
 } from "lucide-react"
 import { JobOpening } from "../../types/job"
 import { Button } from "@/components/ui/button"
@@ -89,6 +90,49 @@ export const JobCard: React.FC<JobCardProps> = ({
                 </span>
                 <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
 
+                {/* Source Platform Badge (LinkedIn, Naukri, Indeed, Internshala, etc.) */}
+                {job.sourcePlatform && (
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                      job.sourcePlatform === "LinkedIn"
+                        ? "bg-sky-500/10 text-sky-400 border-sky-500/25"
+                        : job.sourcePlatform === "Naukri"
+                        ? "bg-rose-500/10 text-rose-400 border-rose-500/25"
+                        : job.sourcePlatform === "Indeed"
+                        ? "bg-blue-600/10 text-blue-400 border-blue-600/25"
+                        : job.sourcePlatform === "Internshala"
+                        ? "bg-teal-500/10 text-teal-400 border-teal-500/25"
+                        : job.sourcePlatform === "Wellfound"
+                        ? "bg-orange-500/10 text-orange-400 border-orange-500/25"
+                        : job.sourcePlatform === "Monster/Foundit"
+                        ? "bg-purple-500/10 text-purple-400 border-purple-500/25"
+                        : "bg-indigo-500/10 text-indigo-400 border-indigo-500/25"
+                    }`}
+                  >
+                    <Globe className="w-2.5 h-2.5" />
+                    <span>{job.sourcePlatform}</span>
+                  </span>
+                )}
+
+                {/* Company Type Badge (Startup, AI, Scaleup, Services, Enterprise) */}
+                {job.companyType && (
+                  <span
+                    className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+                      job.companyType === "Startup"
+                        ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                        : job.companyType === "AI Startup"
+                        ? "bg-violet-500/10 text-violet-400 border-violet-500/25"
+                        : job.companyType === "Product Scaleup"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
+                        : job.companyType === "Tech Services"
+                        ? "bg-slate-500/10 text-slate-300 border-slate-500/25"
+                        : "bg-blue-500/10 text-blue-400 border-blue-500/25"
+                    }`}
+                  >
+                    {job.companyType}
+                  </span>
+                )}
+
                 {/* Role Type Badge: Job vs Internship */}
                 {isInternship ? (
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
@@ -107,11 +151,9 @@ export const JobCard: React.FC<JobCardProps> = ({
                   </span>
                 )}
 
-                {job.featured && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                    <Sparkles className="w-2.5 h-2.5" /> Active Hiring
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Hiring
+                </span>
               </div>
               <h3
                 onClick={() => onViewDetails(job)}

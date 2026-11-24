@@ -1,5 +1,6 @@
 import { JobOpening, JobApplication, JobFilters } from "../types/jobTypes"
 import { generateText } from "./ai/aiService"
+import { getAllSeedJobs } from "./jobsDatabase"
 
 // Curated authentic tech jobs and internships exclusively opened in India, with strong focus in Bangalore & Karnataka
 const SEED_INDIA_ROLES: JobOpening[] = [
@@ -1356,7 +1357,7 @@ const SEED_INDIA_ROLES: JobOpening[] = [
 ]
 
 // In-memory data store with fallback caching
-let jobsData: JobOpening[] = [...SEED_INDIA_ROLES]
+let jobsData: JobOpening[] = [...getAllSeedJobs(), ...SEED_INDIA_ROLES]
 const userApplications = new Map<string, JobApplication[]>()
 const userSavedJobs = new Map<string, Set<string>>()
 
@@ -1492,6 +1493,24 @@ export async function getJobs(filters: JobFilters = {}, userId: string = "guest-
   if (filters.workMode && filters.workMode !== "All") {
     filtered = filtered.filter(
       (job) => job.workMode.toLowerCase() === filters.workMode?.toLowerCase()
+    )
+  }
+
+  // Filter by hiring platform (LinkedIn, Naukri, Indeed, Foundit/Monster, Internshala, Wellfound)
+  if (filters.platform && filters.platform !== "All") {
+    const p = filters.platform.toLowerCase()
+    filtered = filtered.filter(
+      (job) =>
+        (job.sourcePlatform && job.sourcePlatform.toLowerCase().includes(p)) ||
+        (job.applyUrl && job.applyUrl.toLowerCase().includes(p))
+    )
+  }
+
+  // Filter by companyType (Startup, Product Scaleup, Enterprise, AI Startup, Tech Services)
+  if (filters.companyType && filters.companyType !== "All") {
+    const ct = filters.companyType.toLowerCase()
+    filtered = filtered.filter(
+      (job) => job.companyType && job.companyType.toLowerCase().includes(ct)
     )
   }
 

@@ -77,6 +77,8 @@ export default function JobOpeningsPage() {
   const [selectedLocation, setSelectedLocation] = useState("All")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedWorkMode, setSelectedWorkMode] = useState("All")
+  const [selectedPlatform, setSelectedPlatform] = useState("All")
+  const [selectedCompanyType, setSelectedCompanyType] = useState("All")
   const [sortBy, setSortBy] = useState<"latest" | "salary" | "match">("latest")
 
   // Modals state
@@ -105,6 +107,8 @@ export default function JobOpeningsPage() {
         workMode: selectedWorkMode,
         roleType: effectiveRoleType,
         location: effectiveLocation,
+        platform: selectedPlatform !== "All" ? selectedPlatform : undefined,
+        companyType: selectedCompanyType !== "All" ? selectedCompanyType : undefined,
         sortBy: sortBy,
       }
 
@@ -133,7 +137,7 @@ export default function JobOpeningsPage() {
   // Reload when filters change
   useEffect(() => {
     loadJobData()
-  }, [activeTab, selectedRoleType, selectedLocation, selectedCategory, selectedWorkMode, sortBy])
+  }, [activeTab, selectedRoleType, selectedLocation, selectedCategory, selectedWorkMode, sortBy, selectedPlatform, selectedCompanyType])
 
   // Handle Search submit / debounce
   useEffect(() => {
@@ -475,6 +479,35 @@ export default function JobOpeningsPage() {
                 <option value="Remote">Remote (India)</option>
               </select>
 
+              {/* Platform Source Filter */}
+              <select
+                value={selectedPlatform}
+                onChange={(e) => setSelectedPlatform(e.target.value)}
+                className="px-3 py-2 rounded-2xl text-xs bg-muted/40 border border-border text-foreground focus:ring-1 focus:ring-indigo-500 cursor-pointer font-medium"
+              >
+                <option value="All">🌐 All Platforms (LinkedIn, Naukri, Indeed...)</option>
+                <option value="LinkedIn">💼 LinkedIn Jobs</option>
+                <option value="Naukri">🔵 Naukri.com</option>
+                <option value="Indeed">🟦 Indeed India</option>
+                <option value="Internshala">🎓 Internshala</option>
+                <option value="Wellfound">✌️ Wellfound (AngelList)</option>
+                <option value="Monster/Foundit">🟣 Foundit (Monster)</option>
+              </select>
+
+              {/* Company Type Filter */}
+              <select
+                value={selectedCompanyType}
+                onChange={(e) => setSelectedCompanyType(e.target.value)}
+                className="px-3 py-2 rounded-2xl text-xs bg-muted/40 border border-border text-foreground focus:ring-1 focus:ring-indigo-500 cursor-pointer font-medium"
+              >
+                <option value="All">🏢 All Company Types</option>
+                <option value="Startup">🚀 Fast-Growing Startups (Zepto, CRED, Meesho...)</option>
+                <option value="AI Startup">🤖 AI & DeepTech (Sarvam, Krutrim, Yellow.ai...)</option>
+                <option value="Product Scaleup">⚡ Product Scaleups (Zoho, Freshworks, Postman...)</option>
+                <option value="Tech Services">🏛️ Tech Services (TCS Digital, Infosys, Accenture...)</option>
+                <option value="Enterprise">🌐 Global Tech Giants (Google, Microsoft, Uber...)</option>
+              </select>
+
               {/* Work Mode Filter */}
               <select
                 value={selectedWorkMode}
@@ -539,6 +572,86 @@ export default function JobOpeningsPage() {
                 <MapPin className="w-3.5 h-3.5" />
                 <span>{selectedLocation === "Bangalore" || activeTab === "bangalore" ? "✓ Bangalore Selected" : "Filter: Bangalore Only"}</span>
               </button>
+            </div>
+          </div>
+
+          {/* Platform Pills & Live Portals Launch Row */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
+              <span className="text-[11px] font-bold text-muted-foreground mr-1 shrink-0 flex items-center gap-1">
+                <Globe className="w-3.5 h-3.5 text-indigo-400" /> Platform:
+              </span>
+              {[
+                { label: "All Platforms", val: "All" },
+                { label: "LinkedIn Jobs", val: "LinkedIn" },
+                { label: "Naukri", val: "Naukri" },
+                { label: "Indeed", val: "Indeed" },
+                { label: "Internshala", val: "Internshala" },
+                { label: "Wellfound", val: "Wellfound" },
+                { label: "Monster / Foundit", val: "Monster/Foundit" },
+              ].map((p) => (
+                <button
+                  key={p.val}
+                  onClick={() => setSelectedPlatform(p.val)}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    selectedPlatform === p.val
+                      ? "bg-blue-600 text-white font-bold shadow-xs"
+                      : "bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted border border-border/60"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Direct Portal Search Jump Links */}
+            <div className="shrink-0 flex items-center gap-1.5 text-[11px] text-muted-foreground overflow-x-auto pb-1 scrollbar-none">
+              <span className="font-semibold text-slate-400 shrink-0">Live Portals:</span>
+              <a
+                href="https://www.linkedin.com/jobs/search/?keywords=software+engineer+intern+india"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-0.5 rounded-lg bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border border-sky-500/25 flex items-center gap-1 transition-colors shrink-0"
+                title="Search live jobs on LinkedIn"
+              >
+                LinkedIn <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href="https://www.naukri.com/software-engineer-jobs-in-bangalore"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-0.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/25 flex items-center gap-1 transition-colors shrink-0"
+                title="Search live jobs on Naukri"
+              >
+                Naukri <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href="https://in.indeed.com/jobs?q=software+engineer+intern&l=Bengaluru%2C+Karnataka"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 border border-indigo-500/25 flex items-center gap-1 transition-colors shrink-0"
+                title="Search live jobs on Indeed"
+              >
+                Indeed <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href="https://internshala.com/internships/software-development-internship/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/25 flex items-center gap-1 transition-colors shrink-0"
+                title="Search live internships on Internshala"
+              >
+                Internshala <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+              <a
+                href="https://www.foundit.in/srp/results?query=software+engineer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/25 flex items-center gap-1 transition-colors shrink-0"
+                title="Search live jobs on Foundit / Monster"
+              >
+                Foundit <ExternalLink className="w-2.5 h-2.5" />
+              </a>
             </div>
           </div>
         </div>

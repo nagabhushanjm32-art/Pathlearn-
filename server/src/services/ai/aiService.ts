@@ -251,10 +251,14 @@ export async function generateText(options: GenerateTextOptions | string): Promi
 
     for (const modelName of CANDIDATE_GEMINI_MODELS) {
       try {
-        const response = await genAI.models.generateContent({
+        const reqPromise = genAI.models.generateContent({
           model: modelName,
           contents: promptCombined,
         })
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout calling model ${modelName}`)), 12000)
+        )
+        const response = await Promise.race([reqPromise, timeoutPromise])
 
         const text = response.text
         if (text && text.trim()) {
@@ -343,13 +347,17 @@ export async function generateJSON<T = any>(
 
     for (const modelName of CANDIDATE_GEMINI_MODELS) {
       try {
-        const response = await genAI.models.generateContent({
+        const reqPromise = genAI.models.generateContent({
           model: modelName,
           contents: promptCombined,
           config: {
             responseMimeType: "application/json",
           },
         })
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Timeout calling model ${modelName}`)), 12000)
+        )
+        const response = await Promise.race([reqPromise, timeoutPromise])
 
         const text = response.text
         if (text && text.trim()) {

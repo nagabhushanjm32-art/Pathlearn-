@@ -17,6 +17,8 @@ export async function getJobsHandler(req: Request, res: Response): Promise<void>
       roleType: req.query.roleType as any,
       location: req.query.location as string,
       experienceLevel: req.query.experienceLevel as string,
+      platform: req.query.platform as string,
+      companyType: req.query.companyType as string,
       sortBy: req.query.sortBy as "latest" | "salary" | "match"
     }
 

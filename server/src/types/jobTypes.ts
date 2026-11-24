@@ -34,6 +34,8 @@ export interface JobOpening {
   featured?: boolean
   urgentHiring?: boolean
   applyUrl: string
+  sourcePlatform?: "LinkedIn" | "Naukri" | "Indeed" | "Monster/Foundit" | "Internshala" | "Wellfound" | "Direct Company"
+  companyType?: "Startup" | "Product Scaleup" | "Enterprise" | "AI Startup" | "Tech Services"
 }
 
 export type ApplicationStatus = "APPLIED" | "UNDER_REVIEW" | "SHORTLISTED" | "INTERVIEW_SCHEDULED" | "OFFER_EXTENDED"
@@ -74,5 +76,7 @@ export interface JobFilters {
   roleType?: "All" | "Job" | "Internship"
   location?: string
   experienceLevel?: string
+  platform?: string
+  companyType?: string
   sortBy?: "latest" | "salary" | "match"
 }
