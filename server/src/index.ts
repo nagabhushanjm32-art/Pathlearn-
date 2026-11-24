@@ -1,11 +1,4 @@
-import dns from "dns"
-// Prefer IPv4 DNS resolution first to prevent IPv6 connect timeout on Windows / cloud networks
-try {
-  dns.setDefaultResultOrder("ipv4first")
-} catch {
-  // Ignore if unsupported in environment
-}
-
+import "./utils/dnsInit"
 import app from "./app"
 import { config } from "./config"
 
